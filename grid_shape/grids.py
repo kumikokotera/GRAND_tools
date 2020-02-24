@@ -9,7 +9,10 @@ import inspect
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 
-import hexy as hx
+try:
+    from grid_shape import hexy as hx
+except:
+    import hexy as hx
 
 Z_SITE = 2900 # height of GP300 site in km
 
@@ -211,6 +214,11 @@ def create_grid_univ(
         assert radius > 2, "radius must be > 2m"
     except AssertionError:
         sys.exit("radius must be > 2m")
+
+    try: 
+        assert GridShape in ["rect", "hexhex", "hexrand", "trihex"]
+    except AssertionError:
+        sys.exit("Gridshape not known")
 
     if GridShape == 'rect':
         # create rectangular grid
@@ -439,8 +447,7 @@ def get_offset(radius, GridShape):
         offset=[0,0]
     return offset
 
-    if do_offset:
-
+  
 def get_offset_in_grid(GridShape, x_radius=None, y_radius=None):
     '''
     Draw random offset in the original grid 
