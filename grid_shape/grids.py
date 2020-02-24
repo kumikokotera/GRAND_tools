@@ -178,7 +178,7 @@ def create_grid_univ(
     should be called outside of database reading loop
 
     Parameters:
-    
+
     GridShape: str
         shape of antenna grid
         'rect' = rectangles tiled over rectangular shape
@@ -242,14 +242,16 @@ def create_grid_univ(
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout...')
 
+
         Nring = 5 # number of hex rings corresponding to 216 antennas
         radius_grid = (1 + Nring *1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
+
         xcube = hx.get_spiral(np.array((0,0,0)), 0, Nring)
         xpix = hx.cube_to_pixel(xcube, radius)
         xcorn = hx.get_corners(xpix,radius)
         
         sh = np.array(xcorn).shape
-        
+
         xcorn2=xcorn.transpose(0,2,1)
         hexarray = np.array(xcorn2).reshape((sh[0]*sh[2],sh[1]))
         
@@ -268,7 +270,6 @@ def create_grid_univ(
         x_pos_new = grid_x[index]
         y_pos_new = grid_y[index]
        
-
         # write new antenna position file
         if(directory!=None):
             logging.debug('create_grid: Writing in file '+ directory +'/new_antpos_hex_%d.dat...'%radius)
@@ -321,7 +322,7 @@ def create_grid_univ(
     if GridShape == 'hexrand':
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout with random displacements...')
-        
+
         Nring = 5 # number of hex rings corresponding to 186 antennas
         xcube = hx.get_spiral(np.array((0,0,0)), 0,Nring)
         xpix = hx.cube_to_pixel(xcube, radius)
@@ -350,11 +351,13 @@ def create_grid_univ(
         y_pos_new[indrand] += np.random.randn(Nrand) * radius*randeff
 
         # write new antenna position file
+
     #      logging.debug('create_grid: Writing in file '+ directory +'/new_antpos_hexrand.dat...')
     #      FILE = open(directory+ '/new_antpos_hexrand.dat',"w+" )
     #      for i in range( 1, len(x_pos_new)+1 ):
     #          print("%i A%i %1.5e %1.5e %1.5e" % (i,i-1,x_pos_new[i-1],y_pos_new[i-1],z_site), end='\n', file=FILE)
     #     FILE.close()
+
 
 
     # for now set position of z to site altitude
@@ -370,7 +373,6 @@ def create_grid_univ(
         for i in range( 1, len(x_pos_new)+1 ):
             print("%i A%i %1.5e %1.5e %1.5e" % (i,i-1,x_pos_new[i-1],y_pos_new[i-1],z_site), end='\n', file=FILE)
         FILE.close()
-
 
    # rotate grid of specified angle
     if angle != 0:
@@ -410,7 +412,6 @@ def create_grid_univ(
     else: 
         offset = [0,0]
   
-
     if DISPLAY:
         fig, axs = plt.subplots(1,1)
         axs.plot(new_pos[0,:], new_pos[1,:], 'r.')
@@ -421,8 +422,6 @@ def create_grid_univ(
         plt.show()
     
     return new_pos, offset
-
-
 
 def get_offset(radius, GridShape):
     '''
@@ -440,6 +439,7 @@ def get_offset(radius, GridShape):
         offset=[0,0]
     return offset
 
+    if do_offset:
 
 def get_offset_in_grid(GridShape, x_radius=None, y_radius=None):
     '''
