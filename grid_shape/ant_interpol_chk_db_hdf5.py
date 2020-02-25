@@ -38,11 +38,11 @@ dbfile="/home/mjtueros/GRAND/GP300/HDF5StshpLibrary/StshpXmaxLibraryInExa24.01.s
 #directory where the files from the library are located
 Directory = "/home/mjtueros/GRAND/GP300/HDF5StshpLibrary/Outbox"
 #what to use in the interpolation (efield, voltage, filteredvoltage)
-usetrace='efield'
+usetrace='voltage'
 #threshold abouve wich the interpolation is computed
 threshold=0;#26 #8.66 for 15uV , 26 for 45uV
 trigger=75
-display=True
+display=False
 #logging.debug('This is a debug message')
 #logging.info('This is an info message')
 #logging.warning('This is a warning message')
@@ -166,6 +166,10 @@ while(DatabaseRecord!=None and countok < 1100): #500 events in 30min, withouth t
             errortypez[:,countok]=[1 if  (p2p_z_new[i] >= trigger and p2pE[2,160+i]<trigger) else -1 if (p2p_z_new[i] < trigger and p2pE[2,160+i]>=trigger) else 0 if (p2p_z_new[i] >= trigger and p2pE[2,160+i]>=trigger) else -2 for i in a]
             #.
             countok += 1
+            #
+            #now, lets open the Antenna
+
+
             print("Event #{} done".format(countok))
             #.
             #.
