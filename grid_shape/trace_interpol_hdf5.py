@@ -3,16 +3,14 @@ TODO: use magnetic field values and shower core from config-file
 '''
 import numpy as np
 from scipy import signal
-from utils import getn
 import operator
 import logging
 import os
 
 from os.path import split
 import sys
-
+from copy import deepcopy
 from frame import UVWGetter
-from io_utils import load_trace
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
@@ -70,6 +68,44 @@ def unwrap(phi, ontrue=None):
 #======================================
 
 
+def get_antenna_t0(xant,yant,hant, azimuthdeg, zenithdeg):
+    #this code is copied from zhaires fieldinit
+    #returns the t0 of the antenna in ns
+    #x,y,hant is antenna position in zhaires reference frame, hant is the altitude above ground (its making flat earth asumptions for now)
+    #azimuth and zenith are in ZHAireS,degrees
+    cspeed = 299792458.0
+    #get incoming azimut in radians
+    phidirrad=azimuthdeg*np.pi/180.0
+    #set phidirrad in the rangle [0,2pi]
+    if(phidirrad < 0.0):
+       phidirrad=phidirrad+2.0*np.pi
+
+    zenithrad=zenithdeg*np.pi/180.0
+    # Auxiliary variables
+    coszenith=np.cos(zenithrad)
+    sinzenith=np.sin(zenithrad)
+    tanzenith=np.tan(zenithrad)
+
+
+    # distance to the axis
+    Rant=np.sqrt(xant*xant+yant*yant)
+    #phi
+    phiantrad=np.arctan2(yant,xant)
+    if(phiantrad  < 0):
+      phiantrad=2.0*np.pi+phiantrad
+
+    #Adjusting time window
+    #phi of antenna
+    #projection of r of antenna on shower phi direction
+    angle=np.absolute(phidirrad-phiantrad)
+
+    rproj=Rant*np.cos(angle)
+
+    dtna=-(hant/coszenith + (rproj-hant*tanzenith)*sinzenith)/cspeed
+
+    return dtna*1.0e9
+
+
 
 def interpolate_trace(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=None,  zeroadding=None, ontrue=None, flow=60.e6, fhigh=200.e6):
     """Interpolation of signal traces at the specific position in the frequency domain
@@ -118,7 +154,7 @@ def interpolate_trace(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=None,  ze
     Returns:
     ----------
         xnew: numpy array, float
-            time for signal at desired antenna position in ns
+            rough estimation of the time for signal at desired antenna position in ns
         tracedes: numpy array, float
             interpolated electric field component at desired antenna position
     """
@@ -238,32 +274,6 @@ def interpolate_trace(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=None,  ze
     ### Get the pulse sahpe at the desired antenna position
 
     # get the phase
-
-    #Matias way of doing the phi interpolation.
-
-    #The phases are always between -pi and pi , so there is a discontinuity when you go beyond -pi or pi, you "jump" by 2pi
-    #we want to interpolate always in the "closest" direction . This means that if the diference between both phases is bigger than pi, we should add 2*pi to both phases, interpolate, and
-    phides=np.zeros(phi.shape)
-
-    #for i in range(0,len(phi)-1):
-    #  #print(i)
-    #  if(np.abs(phi[i]-phi2[i])>np.pi):
-    #    if(phi[i]<phi2[i]):
-    #      phides[i]= (weight1 * (phi[i]+2.0*np.pi) + weight2 * phi2[i]) - 2.0*np.pi
-    #      #print("1-"+str(weight1)+" phi1:"+str(phi[i]/np.pi)+" |"+str(weight2)+" phi2:"+str(phi2[i]/np.pi)+"phides:"+str(phides[i]/np.pi))
-    #    else:
-    #      phides[i]= (weight1 * phi[i] + weight2 * (phi2[i]+2*np.pi)) - 2.0*np.pi
-    #      #print("2-"+str(weight1)+" phi1:"+str(phi[i]/np.pi)+" |"+str(weight2)+" phi2:"+str(phi2[i]/np.pi)+"phides:"+str(phides[i]/np.pi))
-    #  else:
-    #    phides[i] = weight1 * phi[i] + weight2 * phi2[i]
-    #    #print("3-"+str(weight1)+" phi1:"+str(phi[i]/np.pi)+" |"+str(weight2)+" phi2:"+str(phi2[i]/np.pi)+"phides:"+str(phides[i]/np.pi))
-    #  # get to [-pi,+pi} range
-    #  if(phides[i]>np.pi):
-    #    phides[i]=phides[i]-2*np.pi
-    #  elif(phides[i]<-np.pi):
-    #    phides[i]=phides[i]+2*np.pi
-
-    # getnp.zeros([len(phi2)]) the angle for the desired position
     #Eric
     phides = weight1 * phi_unwrapped + weight2 * phi2_unwrapped
 
@@ -295,7 +305,8 @@ def interpolate_trace(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=None,  ze
     tracedes = (np.fft.irfft(Ampdes))
     tracedes = tracedes.astype(float)
 
-    xdes=(xnew*weight1+xnew2*weight2)
+    #this is a crude interpolation of the time
+    tdes=(xnew*weight1+xnew2*weight2)
     #print("weights 1:"+str(weight1)+ " 2:"+str(weight2))
 
 
@@ -355,7 +366,7 @@ def interpolate_trace(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=None,  ze
         import matplotlib.pyplot as plt
         plt.plot(np.real(t1), np.real(trace1), 'g:', label= "antenna 1")
         plt.plot(np.real(t2), np.real(trace2), 'b:', label= "antenna 2")
-        plt.plot(np.real(xdes*1e9), np.real(tracedes), 'r-', label= "desired")
+        plt.plot(np.real(tdes*1e9), np.real(tracedes), 'r-', label= "desired")
 
         plt.xlabel(r"time (ns)", fontsize=16)
         plt.ylabel(r"Amplitude muV/m ", fontsize=16)
@@ -366,17 +377,15 @@ def interpolate_trace(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=None,  ze
 
 #################################
 
-
-
     if zeroadding is True:
         # hand over time of first antenna since interpolation refers to that time
-        return xdes[0:max_element]*1.e9, tracedes[0:max_element]
+        return tdes[0:max_element]*1.e9, tracedes[0:max_element]
 
     if upsampling is not None:
-        return xdes[0:-1:8]*1.e9, tracedes[0:-1:8]
+        return tdes[0:-1:8]*1.e9, tracedes[0:-1:8]
     else:
         #xnew = np.delete(xnew, -1)
-        return xdes*1.e9, tracedes  # back to ns
+        return tdes*1.e9, tracedes  # back to ns
 
 
 
@@ -399,7 +408,7 @@ def _ProjectPointOnLine(a, b, p):
 
 def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, antennamax=159, threshold=0, EventNumber=0,shower_core=np.array([0,0,0]), DISPLAY=False, usetrace='efield'):
     '''
-    Reads in arrays, looks for neigbours, calls the interpolation and saves the traces
+    Reads in arrays, looks for neighbours, calls the interpolation and saves the traces
 
     Parameters:
     ----------
@@ -409,7 +418,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
         path to HDF5 simulation file
         The script accepts starshape as well as grid arrays
     antennamin,antennamax:int
-        the program is designed to tun on 160 antennas. If your simulation has more, you can specify a range to be used
+        the program is designed to run on the first 160 antennas. If your simulation has more, you can specify a range to be used...but it has to be tested
     threshold :float
         minumum value of p2p in at least one channel of the 4 neighbor antennas to proceed with interpolation (8.66 guarantees minumum p2p of 15 in interpolated (15/sqrt3))
     EventNumber: int
@@ -430,10 +439,10 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
 
 
     NOTE: The selection of the neigbours is sufficiently stable, but does not always pick the "best" neigbour, still looking for an idea
-    TODO: Read-in and save only hdf5 files
     '''
     #print(shower_core)
-    DEVELOPMENT=False
+    DEVELOPMENT=True
+    starshape_exploit=True
 
 
     antennamax=antennamax+1
@@ -482,12 +491,29 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     #making the table of desired antennas for the file
     DesiredAntennaInfoMeta=hdf5io.CreatAntennaInfoMeta(split(InputFilename)[1],CurrentEventName,AntennaModel="Interpolated")
     DesiredIds=np.arange(0, len(positions_des)) #this could be taken from the input file of desired antennas
-    DesiredAntx=positions_des.T[0]
-    DesiredAnty=positions_des.T[1]
-    DesiredAntz=positions_des.T[2]
+    DesiredAntx=deepcopy(positions_des.T[0])
+    DesiredAnty=deepcopy(positions_des.T[1])
+    DesiredAntz=deepcopy(positions_des.T[2]) #this deepcopy bullshit is becouse position_des is later modified by the rotation, and transposition apparently creates a shallow copy (a reference)
     DesiredSlopeA=np.zeros(len(positions_des))
     DesiredSlopeB=np.zeros(len(positions_des))
     DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta)
+
+    if(DEVELOPMENT):
+      print(InputFilename)
+      P2P=hdf5io.get_p2p_hdf5(InputFilename,antennamin=160,usetrace=usetrace)
+      peaktime, peakamplitude= hdf5io.get_peak_time_hilbert_hdf5(InputFilename,antennamin=160, usetrace=usetrace, DISPLAY=DISPLAY)
+
+      if(usetrace=="efield"):
+        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pefield=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
+      elif(usetrace=="voltage"):
+        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pvoltage=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
+      elif(usetrace=="filteredvoltage"):
+        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pfiltered=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
+      else:
+        print("warning,supported trace tipes are efield, voltage and filtered voltage only!")
+
+
+
     hdf5io.SaveAntennaInfo(OutputFilename,DesiredAntennaInfo,CurrentEventName)
     #here i could save other simulation. For now, i save a copy. I could modify some fields to show this is an interpolation
     CurrentShowerSimInfo=hdf5io.GetShowerSimInfo(InputFilename,CurrentEventName)
@@ -495,8 +521,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     CurrentSignalSimInfo=hdf5io.GetSignalSimInfo(InputFilename,CurrentEventName)
     hdf5io.SaveSignalSimInfo(OutputFilename,CurrentShowerSimInfo,CurrentEventName)
 
-
-    print("Warning: this routine is hardwired for a starshape pattern of 160 antennas.Check that is your case!")
+    print("Warning: this routine is hardwired for a starshape pattern of 160 antennas.Check that is your case!. Also it as only been tested on core 0,0,2900")
     # SELECTION: For interpolation only select the desired position which are "in" the plane of simulated antenna positions
     a = positions_sims[0]-positions_sims[10]  #Why this 10, and why that 80?
     a = a/np.linalg.norm(a)
@@ -561,7 +586,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     ### START: ROTATE INTO SHOWER COORDINATES, and core for offset by core position, alreadz corrected in projection
     #GetUVW = UVWGetter(shower_core[0], shower_core[1], shower_core[2], zenith, azimuth, phigeo, thetageo)
     GetUVW = UVWGetter(0., 0., 0., Zenith, Azimuth, phigeo, thetageo)
-
 
     # Rotate only "in"plane desired positions
     pos_des= []
@@ -716,6 +740,15 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
             #so, since the weighting is done just for the distance, and that is the only thing why the position is used inside that function,
             #i will input to interpolate_trace the y and z components, and make x=0 (this is becouse in the uxVxB plane one component is 0?
 
+            if(starshape_exploit): #If i found the two, "external" points, then the internals must be the same minus 8. This is only valid in the 8 branches starshape we use
+              print("exploiting starshape for interpolation, this is experimental!")
+              if(points_I[0][0]>7):
+                record=np.where(points_II['index']==points_I[0][0]-8)
+                points_II[0]=points_II[record]
+              if(points_IV[0][0]>7):
+                record=np.where(points_III['index']==points_IV[0][0]-8)
+                points_III[0]=points_III[record]
+
 
             #points I and IV have a higher radius. lets take the average radius, and the same theta of the desired point as the point1
             #this is stored alreadty in the opoints variable
@@ -729,7 +762,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
             point_online2=np.array([0,meanr*np.cos(theta),meanr*np.sin(theta)])
             #points II and III have a lower radius. lets take the average radius, and the same theta of the desired point as the point2
 
-            #this is to make a list of the indices of antennas in the each quadrant
+            #this is to s a list of the indices of antennas in the each quadrant
             if (DISPLAY and False):
               listI=list(list(zip(*points_I))[0])
               listII=list(list(zip(*points_II))[0])
@@ -805,10 +838,11 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
               print('You must specify either efield, voltage or filteredvoltage, bailing out')
               return 0
 
-            p2p= np.amax(txt0,axis=0)-np.amin(txt0,axis=0)
-            if(max(p2p[1:3])<threshold):
-             #print(max(p2p[1:3]))
-             bailout0=1
+            if(threshold>0):
+              p2p= np.amax(txt0,axis=0)-np.amin(txt0,axis=0)
+              if(max(p2p[1:3])<threshold and threshold>0):
+              #print(max(p2p[1:3]))
+                bailout0=1
 
             AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_IV[0][0])
             if(usetrace=='efield'):
@@ -821,10 +855,11 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
               print('You must specify either efield, voltage or filteredvoltage, bailing out')
               return 0
 
-            p2p= np.amax(txt1,axis=0)-np.amin(txt1,axis=0)
-            if(max(p2p[1:3])<threshold):
-             #print(max(p2p[1:3]))
-             bailout1=1
+            if(threshold>0):
+              p2p= np.amax(txt1,axis=0)-np.amin(txt1,axis=0)
+              if(max(p2p[1:3])<threshold):
+                #print(max(p2p[1:3]))
+                bailout1=1
 
             AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_II[0][0])
             if(usetrace=='efield'):
@@ -837,10 +872,11 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
               print('You must specify either efield, voltage or filteredvoltage, bailing out')
               return 0
 
-            p2p= np.amax(txt2,axis=0)-np.amin(txt2,axis=0)
-            if(max(p2p[1:3])<threshold):
-             #print(max(p2p[1:3]))
-             bailout2=1
+            if(threshold>0):
+              p2p= np.amax(txt2,axis=0)-np.amin(txt2,axis=0)
+              if(max(p2p[1:3])<threshold):
+                #print(max(p2p[1:3]))
+                bailout2=1
 
             AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_III[0][0])
             if(usetrace=='efield'):
@@ -853,10 +889,11 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
               print('You must specify either efield, voltage or filteredvoltage, bailing out')
               return 0
 
-            p2p= np.amax(txt3,axis=0)-np.amin(txt3,axis=0)
-            if(max(p2p[1:3])<threshold):
-             #print(max(p2p[1:3]))
-             bailout3=1
+            if(threshold>0):
+              p2p= np.amax(txt3,axis=0)-np.amin(txt3,axis=0)
+              if(max(p2p[1:3])<threshold):
+                #print(max(p2p[1:3]))
+                bailout3=1
 
             if(bailout0==1 and bailout1==1 and bailout2==1 and bailout3==1):
               print("desired antenna " + str(i) + " had all neighbors below threshold of " + str(threshold)+ ",setting interpolated signal to 0")
@@ -874,19 +911,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 hdf5io.SaveFilteredVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
 
             else:
-                #directory=split(array)[0]+"/"
-                #print("Read traces from ", directory)
-                #directory="/home/mjtueros/GRAND/GP300/GridShape/Stshp_XmaxLibrary_0.1995_85.22_0_Iron_23/"
-
-                #txt0_old = load_trace(directory, points_I[0][0], suffix=".trace")
-                #txt1_old = load_trace(directory, points_IV[0][0], suffix=".trace")
-                #txt2_old = load_trace(directory, points_II[0][0], suffix=".trace")
-                #txt3_old = load_trace(directory, points_III[0][0], suffix=".trace")
-
-                #print(txt0_old-txt0)
-                #print(txt1_old-txt1)
-                #print(txt2_old-txt2)
-                #print(txt3_old-txt3)
 
                 if DEVELOPMENT and DISPLAY:
                   AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,160+i)
@@ -927,7 +951,38 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 xnew_desiredy, tracedes_desiredy =interpolate_trace(xnew1, tracedes1y, point_online1, xnew2, tracedes2y, point_online2, np.array([0,pos_des[i,1],pos_des[i,2]]), zeroadding=None)
                 xnew_desiredz, tracedes_desiredz =interpolate_trace(xnew1, tracedes1z, point_online1, xnew2, tracedes2z, point_online2, np.array([0,pos_des[i,1],pos_des[i,2]]), zeroadding=None)
 
-                if DISPLAY and False:
+
+                #now, lets use zhaires timing solution
+                #print("trying to get the ant0",points_II[0][0])
+                azimuthdeg=180.+Azimuth
+                zenithdeg=180.-Zenith
+                if(zenithdeg>=360.0):
+                 zenithdeg=zenithdeg-360.0
+                #print(azimuthdeg,zenithdeg)
+                #positions_des
+                #print(xpoints[points_II[0][0]],ypoints[points_II[0][0]],zpoints[points_II[0][0]])
+                #t0=get_antenna_t0(xpoints[points_II[0][0]],ypoints[points_II[0][0]],zpoints[points_II[0][0]]-2900, azimuthdeg, zenithdeg)
+                #print("trying to get the ant0:",i)
+                #print(i,DesiredAntx[i],DesiredAnty[i],DesiredAntz[i])
+                GroundAltitude=hdf5io.GetGroundAltitude(CurrentEventInfo)
+                t0=get_antenna_t0(DesiredAntx[i],DesiredAnty[i],DesiredAntz[i]-GroundAltitude, azimuthdeg, zenithdeg)
+                tbinsize=hdf5io.GetTimeBinSize(CurrentSignalSimInfo)
+                tmin=hdf5io.GetTimeWindowMin(CurrentSignalSimInfo)
+                tmax=hdf5io.GetTimeWindowMax(CurrentSignalSimInfo)
+                ntbins=len(xnew_desiredx)
+                xnew_desiredx=np.linspace(t0+tmin,t0+tmax-tbinsize*2,ntbins)
+                xnew_desiredy=xnew_desiredx
+                xnew_desiredz=xnew_desiredx
+
+                if(len(xnew_desiredx)!=ntbins):
+                 print("different sizes",ntbins,len(xnew_desiredx))
+                 print(tmin,tmax,tbinsize,ntbins)
+                if((xnew_desiredx[2]-xnew_desiredx[1])!=tbinsize):
+                 print("different tbin sizes",tbinsize,xnew_desiredx[2]-xnew_desiredx[1])
+                 print(tmin,tmax,tbinsize,ntbins)
+
+
+                if DISPLAY:
                     fig4 = plt.figure()
                     ax4 = fig4.add_subplot(1,2,2)
                     ax4.plot(txt0.T[0], txt0.T[2], label = "I")
@@ -976,7 +1031,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                    #ax5.plot(xnew_desiredx, tracedes_desiredy, linestyle='--',color='k', label = "desired")
                    #ax5.plot(xnew1, tracedes1y, linestyle='--',color='r',label = "I->IV")
                    #ax5.plot(xnew2, tracedes2y, linestyle='--', color='b',label = "II->III")
-                   ax5.plot(txtdes.T[0], tracedes_desiredx, linestyle='--',color='g', label = "shifted desired")
+                   ax5.plot(xnew_desiredx, tracedes_desiredx, linestyle='--',color='g', label = "desired")
                    ax5.plot(txtdes.T[0], txtdes.T[1], label = "simulation")
                    plt.title("X component Signals:"+str(i))
                    plt.legend(loc=2)
@@ -986,7 +1041,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                    plt.legend(loc=2)
 
                    ax5b = fig5.add_subplot(3,2,3)
-                   ax5b.plot(txtdes.T[0], tracedes_desiredy, linestyle='--',color='g', label = "shifted desired")
+                   ax5b.plot(xnew_desiredy, tracedes_desiredy, linestyle='--',color='g', label = "desired")
                    ax5b.plot(txtdes.T[0], txtdes.T[2], label = "simulation")
                    plt.title("Y component Signals:"+str(i))
                    plt.legend(loc=2)
@@ -996,7 +1051,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                    plt.legend(loc=2)
 
                    ax5b = fig5.add_subplot(3,2,5)
-                   ax5b.plot(txtdes.T[0], tracedes_desiredz, linestyle='--',color='g', label = "shifted desired")
+                   ax5b.plot(xnew_desiredz, tracedes_desiredz, linestyle='--',color='g', label = "desired")
                    ax5b.plot(txtdes.T[0], txtdes.T[3], label = "simulation")
                    plt.title("Z component Signals:"+str(i))
                    plt.legend(loc=2)
@@ -1005,12 +1060,12 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                    ax6b.plot(txtdes.T[0], tracedes_desiredz-txtdes.T[3], linestyle='--',color='g', label = "absolute diference")
                    plt.legend(loc=2)
 
-                if DISPLAY and False:
+                if DISPLAY:
                   plt.show()
 
                 # ------------------
 
-                # TODO Save as hdf5 file instead of textfile
+                # Save as textfile
                 #print("Interpolated trace stord as ",split(desired)[0]+ '/a'+str(ind[i])+'.trace')
                 #os.system('rm ' + split(desired)[0] + '/*.trace')
                 #FILE = open(split(desired)[0]+ '/a'+str(ind[i])+'.trace', "w+" )
@@ -1020,6 +1075,10 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 #for j in range( 0, len(xnew_desiredx) ):
                 #        print("%3.2f %1.5e %1.5e %1.5e" % (xnew_desiredx[j], tracedes_desiredx[j], tracedes_desiredy[j], tracedes_desiredz[j]), end='\n', file=FILE)
                 #FILE.close()
+
+
+
+
 
                 if(usetrace=='efield'):
                     efield=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
@@ -1066,9 +1125,10 @@ def main():
     desired=np.loadtxt("/home/mjtueros/GRAND/GP300/GridShape/Stshp_XmaxLibrary_0.1995_85.22_0_Iron_23/Test/new_antpos.dat",usecols=(2,3,4))
 
     OutputFilename=split(hdf5file)[0]+"/InterpolatedAntennas.hdf5"
+    print(OutputFilename)
     # call the interpolation: Angles of magnetic field and shower core information needed, but set to default values
     #do_interpolation(desired,hdf5file, zenith, azimuth, phigeo=147.43, thetageo=0.72, shower_core=np.array([0,0,2900]), DISPLAY=False)
-    do_interpolation_hdf5(desired, hdf5file, OutputFilename, antennamin=0, antennamax=159, EventNumber=0,shower_core=np.array([0,0,2900]), DISPLAY=True,usetrace='voltage')
+    do_interpolation_hdf5(desired, hdf5file, OutputFilename, antennamin=0, antennamax=159, EventNumber=0,shower_core=np.array([0,0,2900]), DISPLAY=False,usetrace='efield')
 
 if __name__== "__main__":
   main()
