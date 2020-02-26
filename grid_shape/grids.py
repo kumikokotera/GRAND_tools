@@ -16,154 +16,6 @@ except:
 
 Z_SITE = 2900 # height of GP300 site in km
 
-def create_grid(positions, phi, GridShape, xNum, yNum):
-    '''
-    generate new positions of antennas with specific layout
-    write positions in file path/Test/new_antpos.dat
-    caution: in this routine, a new layout is generated for each shower
-
-    Parameters:
-    path: str
-        path of directory where antpos.dat file is located
-    positions: numpy array
-        x, y, z coordinates of the antennas in the simulation
-    phi: float
-        shower axis zenith
-    GridShape: str
-        shape of antenna grid
-        'rect' = rectangular
-        'hex' = hexagonal
-    xNum, yNum: int
-        number of antennas for new layout in x, y directions
-        only xNum is used for hexagonal grids
-
-    Output:
-    new_pos: numpy arrays
-        x, y, z coordinates of antenna in new layout
-
-
-    '''
-
-    x_pos = positions[0,:]
-    y_pos = positions[1,:]
-    z_pos = positions[2,:]
-
-    z_site = 2900. # height of GP300 site in km
-    icheck = np.mgrid[160:176:1]
-
-    # geometrical parameters for grid
-    minx = min(x_pos)
-    maxx = max(x_pos)
-    miny = min(y_pos)
-    maxy = max(y_pos)
-
-    stepx = (maxx-minx) / (xNum+1)
-    stepy = (maxy-miny) / (yNum+1)
-    hexradius = stepx # for hexagonal grid
-
-    x_pos_new = x_pos
-    y_pos_new = y_pos
-
-    if GridShape == 'check':
-       # points at the end of the antpos.dat file
-       logging.debug('create_grid: Interpolation check...')
-       x_pos_new = x_pos[icheck]
-       y_pos_new = y_pos[icheck]
-
-    if GridShape == 'rect':
-        # create rectangular grid
-        logging.debug('create_grid: Generating rectangular grid...')
-        grid_x, grid_y = np.mgrid[minx:maxx:(xNum*1j), miny:maxy:(yNum*1j)]
-
-        # flatten grids
-        x_pos_new = grid_x.flatten()
-        y_pos_new = grid_y.flatten()
-
-
-    if GridShape == 'hexrect':
-        # create a hexagonal grid fitting into rectangle
-        logging.debug('create_grid:Generating hexagonal grid over rectangle...')
-        import hexagon as hex
-        hexlist = hex.calculate_polygons(minx,miny,maxx,maxy,hexradius)
-        sh = array(hexlist).shape
-        hexarray = array(hexlist).reshape(sh[0]*sh[1],sh[2])
-        grid_x = hexarray[:,0]
-        grid_y = hexarray[:,1]
-
-        # flatten grids
-        x_pos_flat = grid_x.flatten()
-        y_pos_flat = grid_y.flatten()
-
-        # remove redundant points
-        x_pos_flat_fl = np.floor(x_pos_flat)
-        y_pos_flat_fl = np.floor(y_pos_flat)
-        scal = (x_pos_flat_fl-x_pos_flat_fl.min()) + (x_pos_flat_fl.max()-x_pos_flat_fl.min())*(y_pos_flat_fl-y_pos_flat_fl.min())
-        unique, index = np.unique(scal, return_index=True)
-        x_pos_new = x_pos_flat[index]
-        y_pos_new = y_pos_flat[index]
-
-        # remove points outside of border
-        ind = where(x_pos_new > maxx)
-        x_pos_new=np.delete(x_pos_new,ind)
-        y_pos_new=np.delete(y_pos_new,ind)
-        ind = where(x_pos_new < minx)
-        x_pos_new=np.delete(x_pos_new,ind)
-        y_pos_new=np.delete(y_pos_new,ind)
-
-        ind = where(y_pos_new > maxy)
-        x_pos_new=np.delete(x_pos_new,ind)
-        y_pos_new=np.delete(y_pos_new,ind)
-        ind = where(y_pos_new < miny)
-        x_pos_new=np.delete(x_pos_new,ind)
-        y_pos_new=np.delete(y_pos_new,ind)
-
-
-    if GridShape == 'hexhex':
-        # create a hexagonal grid with overall hexagonal layout
-        logging.debug('create_grid:Generating hexagonal grid in hex layout...')
-        import hexy as hx
-
-        Nring = 5 # number of hex rings corresponding to 186 antennas
-        radius = 1000 # radius of hex in m
-        xcube = hx.get_spiral(np.array((0,0,0)), 0,Nring)
-        xpix = hx.cube_to_pixel(xcube, radius)
-        xcorn = hx.get_corners(xpix,radius)
-
-        sh = np.array(xcorn).shape
-        xcorn2=xcorn.transpose(0,2,1)
-        hexarray = np.array(xcorn2).reshape((sh[0]*sh[2],sh[1]))
-
-        grid_x = hexarray[:,0]
-        grid_y = hexarray[:,1]
-
-
-        # remove redundant points
-        x_pos_flat_fl = grid_x
-        y_pos_flat_fl = grid_y
-        scal = (x_pos_flat_fl-x_pos_flat_fl.min()) + (x_pos_flat_fl.max()-x_pos_flat_fl.min())*(y_pos_flat_fl-y_pos_flat_fl.min())
-        scal = np.floor(scal)
-        unique, index = np.unique(scal, return_index=True)
-        x_pos_new = grid_x[index]
-        y_pos_new = grid_y[index]
-
-
-    # for now set position of z to site altitude
-    z_pos_new = x_pos_new*0 + z_site
-
-    # create new position array
-    new_pos = np.stack((x_pos_new,y_pos_new,z_pos_new), axis=0)
-
-    # write new antenna position file
-    #logging.debug('create_grid: Writing in file '+ path +'/Test/new_antpos.dat...')
-    #os.makedirs(os.path.join(path,'Test'),exist_ok=True)
-    #FILE = open(path+ '/Test/new_antpos.dat',"w+" )
-    #for i in range( 1, len(x_pos_new)+1 ):
-    #    print("%i A%i %1.5e %1.5e %1.5e" % (i,i-1,x_pos_new[i-1],y_pos_new[i-1],z_site), end='\n', file=FILE)
-    #FILE.close()
-
-
-    return new_pos
-
 
 def create_grid_univ(
     GridShape,
@@ -251,7 +103,7 @@ def create_grid_univ(
         logging.debug('create_grid:Generating hexagonal grid in hex layout...')
 
 
-        Nring = 5 # number of hex rings corresponding to 216 antennas
+        Nring = 4 # number of hex rings corresponding to 216 antennas
         radius_grid = (1 + Nring *1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
 
         xcube = hx.get_spiral(np.array((0,0,0)), 0, Nring)
@@ -465,3 +317,154 @@ def get_offset_in_grid(GridShape, x_radius=None, y_radius=None):
         print("offset not yet implemented for this GridShape")
         offset=[0,0]
     return [x_offset, y_offset]
+
+
+
+def create_grid(positions, phi, GridShape, xNum, yNum):
+    '''
+    generate new positions of antennas with specific layout
+    write positions in file path/Test/new_antpos.dat
+    caution: in this routine, a new layout is generated for each shower
+
+    Parameters:
+    path: str
+        path of directory where antpos.dat file is located
+    positions: numpy array
+        x, y, z coordinates of the antennas in the simulation
+    phi: float
+        shower axis zenith
+    GridShape: str
+        shape of antenna grid
+        'rect' = rectangular
+        'hex' = hexagonal
+    xNum, yNum: int
+        number of antennas for new layout in x, y directions
+        only xNum is used for hexagonal grids
+
+    Output:
+    new_pos: numpy arrays
+        x, y, z coordinates of antenna in new layout
+
+
+    '''
+
+    x_pos = positions[0,:]
+    y_pos = positions[1,:]
+    z_pos = positions[2,:]
+
+    z_site = 2900. # height of GP300 site in km
+    icheck = np.mgrid[160:176:1]
+
+    # geometrical parameters for grid
+    minx = min(x_pos)
+    maxx = max(x_pos)
+    miny = min(y_pos)
+    maxy = max(y_pos)
+
+    stepx = (maxx-minx) / (xNum+1)
+    stepy = (maxy-miny) / (yNum+1)
+    hexradius = stepx # for hexagonal grid
+
+    x_pos_new = x_pos
+    y_pos_new = y_pos
+
+    if GridShape == 'check':
+       # points at the end of the antpos.dat file
+       logging.debug('create_grid: Interpolation check...')
+       x_pos_new = x_pos[icheck]
+       y_pos_new = y_pos[icheck]
+
+    if GridShape == 'rect':
+        # create rectangular grid
+        logging.debug('create_grid: Generating rectangular grid...')
+        grid_x, grid_y = np.mgrid[minx:maxx:(xNum*1j), miny:maxy:(yNum*1j)]
+
+        # flatten grids
+        x_pos_new = grid_x.flatten()
+        y_pos_new = grid_y.flatten()
+
+
+    if GridShape == 'hexrect':
+        # create a hexagonal grid fitting into rectangle
+        logging.debug('create_grid:Generating hexagonal grid over rectangle...')
+        import hexagon as hex
+        hexlist = hex.calculate_polygons(minx,miny,maxx,maxy,hexradius)
+        sh = array(hexlist).shape
+        hexarray = array(hexlist).reshape(sh[0]*sh[1],sh[2])
+        grid_x = hexarray[:,0]
+        grid_y = hexarray[:,1]
+
+        # flatten grids
+        x_pos_flat = grid_x.flatten()
+        y_pos_flat = grid_y.flatten()
+
+        # remove redundant points
+        x_pos_flat_fl = np.floor(x_pos_flat)
+        y_pos_flat_fl = np.floor(y_pos_flat)
+        scal = (x_pos_flat_fl-x_pos_flat_fl.min()) + (x_pos_flat_fl.max()-x_pos_flat_fl.min())*(y_pos_flat_fl-y_pos_flat_fl.min())
+        unique, index = np.unique(scal, return_index=True)
+        x_pos_new = x_pos_flat[index]
+        y_pos_new = y_pos_flat[index]
+
+        # remove points outside of border
+        ind = where(x_pos_new > maxx)
+        x_pos_new=np.delete(x_pos_new,ind)
+        y_pos_new=np.delete(y_pos_new,ind)
+        ind = where(x_pos_new < minx)
+        x_pos_new=np.delete(x_pos_new,ind)
+        y_pos_new=np.delete(y_pos_new,ind)
+
+        ind = where(y_pos_new > maxy)
+        x_pos_new=np.delete(x_pos_new,ind)
+        y_pos_new=np.delete(y_pos_new,ind)
+        ind = where(y_pos_new < miny)
+        x_pos_new=np.delete(x_pos_new,ind)
+        y_pos_new=np.delete(y_pos_new,ind)
+
+
+    if GridShape == 'hexhex':
+        # create a hexagonal grid with overall hexagonal layout
+        logging.debug('create_grid:Generating hexagonal grid in hex layout...')
+        import hexy as hx
+
+        Nring = 5 # number of hex rings corresponding to 186 antennas
+        radius = 1000 # radius of hex in m
+        xcube = hx.get_spiral(np.array((0,0,0)), 0,Nring)
+        xpix = hx.cube_to_pixel(xcube, radius)
+        xcorn = hx.get_corners(xpix,radius)
+
+        sh = np.array(xcorn).shape
+        xcorn2=xcorn.transpose(0,2,1)
+        hexarray = np.array(xcorn2).reshape((sh[0]*sh[2],sh[1]))
+
+        grid_x = hexarray[:,0]
+        grid_y = hexarray[:,1]
+
+
+        # remove redundant points
+        x_pos_flat_fl = grid_x
+        y_pos_flat_fl = grid_y
+        scal = (x_pos_flat_fl-x_pos_flat_fl.min()) + (x_pos_flat_fl.max()-x_pos_flat_fl.min())*(y_pos_flat_fl-y_pos_flat_fl.min())
+        scal = np.floor(scal)
+        unique, index = np.unique(scal, return_index=True)
+        x_pos_new = grid_x[index]
+        y_pos_new = grid_y[index]
+
+
+    # for now set position of z to site altitude
+    z_pos_new = x_pos_new*0 + z_site
+
+    # create new position array
+    new_pos = np.stack((x_pos_new,y_pos_new,z_pos_new), axis=0)
+
+    # write new antenna position file
+    #logging.debug('create_grid: Writing in file '+ path +'/Test/new_antpos.dat...')
+    #os.makedirs(os.path.join(path,'Test'),exist_ok=True)
+    #FILE = open(path+ '/Test/new_antpos.dat',"w+" )
+    #for i in range( 1, len(x_pos_new)+1 ):
+    #    print("%i A%i %1.5e %1.5e %1.5e" % (i,i-1,x_pos_new[i-1],y_pos_new[i-1],z_site), end='\n', file=FILE)
+    #FILE.close()
+
+
+    return new_pos
+
