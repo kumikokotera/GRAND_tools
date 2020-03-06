@@ -242,8 +242,10 @@ def create_grid_univ(
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout...')
 
+
         Nring = 5 # number of hex rings corresponding to 216 antennas
         radius_grid = (1 + Nring *1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
+
         xcube = hx.get_spiral(np.array((0,0,0)), 0, Nring)
         xpix = hx.cube_to_pixel(xcube, radius)
         xcorn = hx.get_corners(xpix,radius)
@@ -350,11 +352,13 @@ def create_grid_univ(
         y_pos_new[indrand] += np.random.randn(Nrand) * radius*randeff
 
         # write new antenna position file
+
     #      logging.debug('create_grid: Writing in file '+ directory +'/new_antpos_hexrand.dat...')
     #      FILE = open(directory+ '/new_antpos_hexrand.dat',"w+" )
     #      for i in range( 1, len(x_pos_new)+1 ):
     #          print("%i A%i %1.5e %1.5e %1.5e" % (i,i-1,x_pos_new[i-1],y_pos_new[i-1],z_site), end='\n', file=FILE)
     #     FILE.close()
+
 
 
     # for now set position of z to site altitude
@@ -440,6 +444,7 @@ def get_offset(radius, GridShape):
         offset=[0,0]
     return offset
 
+    #if do_offset:
 
 def get_offset_in_grid(GridShape, x_radius=None, y_radius=None):
     '''
