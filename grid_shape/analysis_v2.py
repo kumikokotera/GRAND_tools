@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import grids
 
 
 class Event:
@@ -49,8 +50,8 @@ path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibrary03/"
 ev_list = []
 count = 0
 
-#for subdir in os.listdir(path)[0:25000]:
-for subdir in os.listdir(path):
+for subdir in os.listdir(path)[0:5000]:
+#for subdir in os.listdir(path):
     if os.path.isdir(os.path.join(path, subdir)):
         list_fn = os.listdir(os.path.join(path, subdir))        
         for fn in list_fn:
@@ -72,7 +73,7 @@ threshold = 75
 for ev in ev_list:
     if "voltage" in ev.name:
         ev.num_triggered = sum(ev.is_triggered1(threshold))
-        ev.is_triggered2 = (ev.num_triggered > 10)
+        ev.is_triggered2 = (ev.num_triggered > 5)
 
 # A = [(ev.num_triggered, ev.energy, ev.step, ev.primary, ev.layout, ev.zenith) for  ev in ev_list if "voltage" in ev.name]
 
@@ -80,13 +81,13 @@ for ev in ev_list:
 A = [(ev.num_triggered, ev.energy, ev.step, ev.layout, ev.zenith) for  ev in ev_list if "voltage" in ev.name and ev.primary == "Proton"]
 
 A_rect = [
-    (ev.num_triggered, ev.energy, ev.step, ev.zenith, ev.is_triggered2) for  ev in ev_list
+    (ev.num_triggered, ev.energy, ev.step, ev.zenith, ev.is_triggered2, ev.random_core0, ev.random_core1) for  ev in ev_list
     if "voltage" in ev.name
     and ev.primary == "Proton"
     and ev.layout == 'rect'
 ]
 A_hexhex = [
-    (ev.num_triggered, ev.energy, ev.step, ev.zenith, ev.is_triggered2) for  ev in ev_list
+    (ev.num_triggered, ev.energy, ev.step, ev.zenith, ev.is_triggered2, ev.random_core0, ev.random_core1) for  ev in ev_list
     if "voltage" in ev.name
     and ev.primary == "Proton"
     and ev.layout == 'hexhex'
@@ -262,3 +263,40 @@ for iener, ener in enumerate(enerbins):
     plt.xlim(45,90)
     plt.show()
     plt.savefig('/Users/kotera/BROQUE/Plots_GRAND/Ntrigev_vs_zen_E%4.3f_rect_Proton_10N.png'%(ener))
+
+
+# plot core positions of the triggered events at E=10^17 eV with steps 275
+myener = 0.1
+mystep = 275
+mystephex = 250
+indrect = np.where((np.abs(A_rect[:,1]- myener)<1.e-4) * (A_rect[:,2] == mystep) * (A_rect[:,4] == True))
+indhex = np.where((np.abs(A_hexhex[:,1]- myener)<1.e-4) * (A_hexhex[:,2] == mystephex) * (A_hexhex[:,4] == True))
+
+pos, offset = grids.create_grid_univ('rect', mystep, angle=0, do_offset=False)
+poshex, offsethex = grids.create_grid_univ('hexhex', mystephex, angle=0, do_offset=False)
+
+plt.figure(1) 
+plt.clf()
+plt.plot(pos[0,:],pos[1,:], 'k.')
+plt.plot(-A_rect[indrect,5],-A_rect[indrect,6],'r.')
+plt.ylabel('x [m]')
+plt.xlabel('y [m]')
+plt.title('Proton, rect, E = %4.3f EeV'%(myener))
+plt.legend(loc=4)
+plt.axis('equal')
+plt.xlim(-2000,2000)
+plt.ylim(-2000,2000)
+plt.show()
+    #plt.savefig('/Users/kotera/BROQUE/Plots_GRAND/Ntrigev_vs_zen_E%4.3f_rect_Proton_10N.png'%(ener))
+plt.figure(2) 
+plt.clf()
+plt.plot(poshex[0,:],poshex[1,:], 'k.')
+plt.plot(-A_hexhex[indhex,5],-A_hexhex[indhex,6],'r.')
+plt.ylabel('x [m]')
+plt.xlabel('y [m]')
+plt.title('Proton, hexhex, E = %4.3f EeV'%(myener))
+plt.legend(loc=4)
+plt.axis('equal')
+plt.ylim(-2000,2000)
+plt.xlim(-2000,2000)
+plt.show()
