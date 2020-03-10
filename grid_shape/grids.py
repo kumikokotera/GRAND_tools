@@ -103,7 +103,7 @@ def create_grid_univ(
         logging.debug('create_grid:Generating hexagonal grid in hex layout...')
 
 
-        Nring = 4 # number of hex rings corresponding to 216 antennas
+        Nring = 5 # number of hex rings corresponding to 216 antennas
         radius_grid = (1 + Nring *1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
 
         xcube = hx.get_spiral(np.array((0,0,0)), 0, Nring)
