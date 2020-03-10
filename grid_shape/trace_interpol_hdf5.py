@@ -487,7 +487,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     #write the output file headers
     hdf5io.SaveRunInfo(OutputFilename,CurrentRunInfo)
     hdf5io.SaveEventInfo(OutputFilename,CurrentEventInfo,CurrentEventName)
-    #not using them, but i could put SignalSim And ShowerSim Info
+
     #making the table of desired antennas for the file
     DesiredAntennaInfoMeta=hdf5io.CreatAntennaInfoMeta(split(InputFilename)[1],CurrentEventName,AntennaModel="Interpolated")
     DesiredIds=np.arange(0, len(positions_des)) #this could be taken from the input file of desired antennas
@@ -498,28 +498,15 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     DesiredSlopeB=np.zeros(len(positions_des))
     DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta)
 
-    if(DEVELOPMENT):
-      print(InputFilename)
-      P2P=hdf5io.get_p2p_hdf5(InputFilename,antennamin=160,usetrace=usetrace)
-      peaktime, peakamplitude= hdf5io.get_peak_time_hilbert_hdf5(InputFilename,antennamin=160, usetrace=usetrace, DISPLAY=DISPLAY)
+    hdf5io.SaveAntennaInfo(OutputFilename,DesiredAntennaInfo,CurrentEventName,overwrite=True)
 
-      if(usetrace=="efield"):
-        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pefield=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
-      elif(usetrace=="voltage"):
-        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pvoltage=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
-      elif(usetrace=="filteredvoltage"):
-        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pfiltered=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
-      else:
-        print("warning,supported trace tipes are efield, voltage and filtered voltage only!")
-
-
-
-    hdf5io.SaveAntennaInfo(OutputFilename,DesiredAntennaInfo,CurrentEventName)
+    #not using them, but i could put SignalSim And ShowerSim Info
     #here i could save other simulation. For now, i save a copy. I could modify some fields to show this is an interpolation
     CurrentShowerSimInfo=hdf5io.GetShowerSimInfo(InputFilename,CurrentEventName)
     hdf5io.SaveShowerSimInfo(OutputFilename,CurrentShowerSimInfo,CurrentEventName)
     CurrentSignalSimInfo=hdf5io.GetSignalSimInfo(InputFilename,CurrentEventName)
     hdf5io.SaveSignalSimInfo(OutputFilename,CurrentShowerSimInfo,CurrentEventName)
+
 
     print("Warning: this routine is hardwired for a starshape pattern of 160 antennas.Check that is your case!. Also it as only been tested on core 0,0,2900")
     # SELECTION: For interpolation only select the desired position which are "in" the plane of simulated antenna positions
@@ -1077,9 +1064,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 #FILE.close()
 
 
-
-
-
                 if(usetrace=='efield'):
                     efield=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     EfieldTable=hdf5io.CreateEfieldTable(efield, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
@@ -1096,6 +1080,26 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
 
                 #delete after iterate
                 del points_I, points_II, points_III, points_IV
+
+
+    #now aim at the point where all the antennas where interpolated and saved to file. Now i will calulate the peak to peak and hilbert envelope peak and time
+
+    if(DEVELOPMENT):
+      print(InputFilename)
+      P2P=hdf5io.get_p2p_hdf5(OutputFilename,usetrace=usetrace)
+      peaktime, peakamplitude= hdf5io.get_peak_time_hilbert_hdf5(OutputFilename, usetrace=usetrace, DISPLAY=DISPLAY)
+
+      if(usetrace=="efield"):
+        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pefield=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
+      elif(usetrace=="voltage"):
+        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pvoltage=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
+      elif(usetrace=="filteredvoltage"):
+        DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta, P2Pfiltered=P2P, HilbertPeak=peakamplitude,HilbertPeakTime=peaktime)
+      else:
+        print("warning,supported trace tipes are efield, voltage and filtered voltage only!")
+
+    hdf5io.SaveAntennaInfo4(OutputFilename,DesiredAntennaInfo,CurrentEventName,overwrite=True)
+
 
 #-------------------------------------------------------------------
 
