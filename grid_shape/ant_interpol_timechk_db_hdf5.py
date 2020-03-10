@@ -41,7 +41,7 @@ Directory = "/home/mjtueros/GRAND/GP300/HDF5StshpLibrary/Outbox"
 usetrace='efield'
 #threshold abouve wich the interpolation is computed
 threshold=0;#26 #8.66 for 15uV , 26 for 45uV
-trigger=75
+trigger=30
 display=False
 #logging.debug('This is a debug message')
 #logging.info('This is an info message')
@@ -73,6 +73,13 @@ counterr = 0
 countok = 0
 InterpErrAll = np.zeros((16,1100))
 P2pAll = np.zeros((16,1100))
+P2pAllx = np.zeros((16,1100))
+P2pAlly = np.zeros((16,1100))
+P2pAllz = np.zeros((16,1100))
+errortype = np.zeros((16,1100))
+errortypex = np.zeros((16,1100))
+errortypey = np.zeros((16,1100))
+errortypez = np.zeros((16,1100))
 distance = np.zeros(1100)
 energy= np.zeros(1100)
 zenith= np.zeros(1100)
@@ -108,32 +115,31 @@ while(DatabaseRecord!=None and countok < 1000): #500 events in 30min, withouth t
             antennamin=160
             antennamax=176 #NOTE THAT WE ARE GETTING only THE RANDOM!
             AntID=CurrentAntennaInfo['ID'].data[antennamin:antennamax]
-            AntNum=len(AntID)
-            xpoints=CurrentAntennaInfo['X'].data[0:antennamax]
-            ypoints=CurrentAntennaInfo['Y'].data[0:antennamax]
-            zpoints=CurrentAntennaInfo['Z'].data[0:antennamax]
-            AntPos=np.stack((xpoints,ypoints,zpoints), axis=0)
             #.
             #this gets the p2p values in all chanels, for all simulated antennas.
             #.
             p2p_total_sim=CurrentAntennaInfo['P2P_efield'].data[antennamin:antennamax]
+            p2p_x_sim=CurrentAntennaInfo['P2Px_efield'].data[antennamin:antennamax]
+            p2p_y_sim=CurrentAntennaInfo['P2Py_efield'].data[antennamin:antennamax]
+            p2p_z_sim=CurrentAntennaInfo['P2Pz_efield'].data[antennamin:antennamax]
             t0_sim=CurrentAntennaInfo['HilbertPeakTime'].data[antennamin:antennamax]
-
             #compute the footprint size:
             p2p_all=CurrentAntennaInfo['P2P_efield'].data[0:antennamax]
-            ind = np.where(p2p_total_sim > 30) #now i remove the cases where the signal is less than 30
+            xpoints=CurrentAntennaInfo['X'].data[0:antennamax]#but for the positions we get all, cos we need all
+            ypoints=CurrentAntennaInfo['Y'].data[0:antennamax]
+            zpoints=CurrentAntennaInfo['Z'].data[0:antennamax]
+            AntPos=np.stack((xpoints,ypoints,zpoints), axis=0)
+            ind = np.where(p2p_total_sim > trigger) #now i remove the cases where the signal is less than trigger
             myAntPos= AntPos[:,ind]
             modulus = np.sqrt(myAntPos[0,:]**2+myAntPos[1,:]**2)
             if(modulus.size!=0):
               maxdistance=max(modulus[0])
             else:
               maxdistance=0
-
+            #.
             energy[countok]=Energy
             zenith[countok]=Zenith
             distance[countok]=maxdistance
-
-
             #.
             #now, lets open the Interpolated file
             antennamin=0
@@ -141,6 +147,9 @@ while(DatabaseRecord!=None and countok < 1000): #500 events in 30min, withouth t
             InputFilename=str(Directory)+"/"+str(JobName)+"/"+str(JobName)+".hdf5.Interpolated.efield.hdf5"
             CurrentAntennaInfo=hdf5io.GetAntennaInfo4(InputFilename,CurrentEventName)
             p2p_total_int=CurrentAntennaInfo['P2P_efield'].data[antennamin:antennamax]
+            p2p_x_int=CurrentAntennaInfo['P2Px_efield'].data[antennamin:antennamax]
+            p2p_y_int=CurrentAntennaInfo['P2Py_efield'].data[antennamin:antennamax]
+            p2p_z_int=CurrentAntennaInfo['P2Pz_efield'].data[antennamin:antennamax]
             t0_int=CurrentAntennaInfo['HilbertPeakTime'].data[antennamin:antennamax]
             InterpErr=t0_int-t0_sim
             #
@@ -148,6 +157,17 @@ while(DatabaseRecord!=None and countok < 1000): #500 events in 30min, withouth t
             #.
             #and this is the p2p value of all interpolated antennas
             P2pAll[:,countok] = p2p_total_sim
+            #.
+            P2pAllx[:,countok] = p2p_x_int
+            P2pAlly[:,countok] = p2p_y_int
+            P2pAllz[:,countok] = p2p_z_int
+            #.
+            #now, false positives is 2, false negatives is -2, 1  is correct and triggered, -1 is neither
+            a=np.arange(0,len(p2p_total_sim))
+            errortype[:,countok]=[2 if  (p2p_total_int[i] >= trigger and p2p_total_sim[i]<trigger) else -2 if (p2p_total_int[i] < trigger and p2p_total_sim[i]>=trigger) else 1 if (p2p_total_int[i] >= trigger and p2p_total_sim[i]>=trigger) else -1  for i in a]
+            errortypex[:,countok]=[2 if  (p2p_x_int[i] >= trigger and p2p_x_sim[i]<trigger) else -2 if (p2p_x_int[i] < trigger and p2p_x_sim[i]>=trigger) else 1 if (p2p_x_int[i] >= trigger and p2p_x_sim[i]>=trigger) else -1 for i in a]
+            errortypey[:,countok]=[2 if  (p2p_y_int[i] >= trigger and p2p_y_sim[i]<trigger) else -2 if (p2p_y_int[i] < trigger and p2p_y_sim[i]>=trigger) else 1 if (p2p_y_int[i] >= trigger and p2p_y_sim[i]>=trigger) else -1 for i in a]
+            errortypez[:,countok]=[2 if  (p2p_z_int[i] >= trigger and p2p_z_sim[i]<trigger) else -2 if (p2p_z_int[i] < trigger and p2p_z_sim[i]>=trigger) else 1 if (p2p_z_int[i] >= trigger and p2p_z_sim[i]>=trigger) else -1 for i in a]
             #.
             countok += 1
             #
@@ -167,7 +187,53 @@ ind = np.where(P2pAll != 0) #now i remove the cases where the signal is 0
 myInterpErrAll = InterpErrAll[ind]
 myP2pAll= P2pAll[ind]
 
+errortype=errortype[:,0:countok] #here i remove the unused part of the arrays
+errortypex=errortypex[:,0:countok]
+errortypey=errortypey[:,0:countok]
+errortypez=errortypez[:,0:countok]
 
+errortype=errortype.flatten()
+errortypex=errortypex.flatten()
+errortypey=errortypey.flatten()
+errortypez=errortypez.flatten()
+
+##############Plot histogram of relative errors, for all components####################################
+fig1 = plt.figure(1,figsize=(7,5), dpi=100, facecolor='w', edgecolor='k')
+mybins = [-2.5,-1.5,-0.5,0.5,1.5,2.5]
+
+ax1=fig1.add_subplot(221)
+ax1.set_xlabel('type:-2 false negative -1 negative 1 positive 2 false positive')
+ax1.set_ylabel('N')
+name = 'clasification errors ' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+plt.title(name)
+plt.yscale('log')
+plt.hist(errortype, bins=mybins,alpha=0.8,label="Total",density=True)
+
+ax2=fig1.add_subplot(222)
+ax2.set_xlabel('type:-2 false negative -1 negative 1 positive 2 false positive')
+ax2.set_ylabel('N')
+name = 'clasification errors x' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+plt.title(name)
+plt.yscale('log')
+plt.hist(errortypex, bins=mybins,alpha=0.8,label="Total",density=True)
+
+ax3=fig1.add_subplot(223)
+ax3.set_xlabel('type:-2 false negative -1 negative 1 positive 2 false positive')
+ax3.set_ylabel('N')
+name = 'clasification errors y' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+plt.title(name)
+plt.yscale('log')
+plt.hist(errortypey, bins=mybins,alpha=0.8,label="Total",density=True)
+
+ax4=fig1.add_subplot(224)
+ax4.set_xlabel('type:-2 false negative -1 negative 1 positive 2 false positive')
+ax4.set_ylabel('N')
+name = 'clasification errors z ' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+plt.title(name)
+plt.yscale('log')
+plt.hist(errortypez, bins=mybins,alpha=0.8,label="Total",density=True)
+
+plt.show()
 ##############Plot histogram of relative errors, for all components####################################
 fig2 = plt.figure(2,figsize=(7,5), dpi=100, facecolor='w', edgecolor='k')
 mybins = np.linspace(-495,495,199)
