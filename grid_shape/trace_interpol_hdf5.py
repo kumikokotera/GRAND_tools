@@ -488,7 +488,8 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     #write the output file headers
     hdf5io.SaveRunInfo(OutputFilename,CurrentRunInfo)
     hdf5io.SaveEventInfo(OutputFilename,CurrentEventInfo,CurrentEventName)
-    #making the table of desired antennas for the file
+
+    #making the table of desired antennas for the file (but we will save it later, when we know wich were actually used)
     DesiredAntennaInfoMeta=hdf5io.CreatAntennaInfoMeta(split(InputFilename)[1],CurrentEventName,AntennaModel="Interpolated")
     DesiredIds=np.arange(0, len(positions_des)) #this could be taken from the input file of desired antennas
     DesiredAntx=deepcopy(positions_des.T[0])
@@ -496,10 +497,9 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     DesiredAntz=deepcopy(positions_des.T[2]) #this deepcopy bullshit is becouse position_des is later modified by the rotation, and transposition apparently creates a shallow copy (a reference)
     DesiredSlopeA=np.zeros(len(positions_des))
     DesiredSlopeB=np.zeros(len(positions_des))
-    DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta)
-    hdf5io.SaveAntennaInfo(OutputFilename,DesiredAntennaInfo,CurrentEventName)
 
-    #not using them, but i could put SignalSim And ShowerSim Info
+
+    #not using them, but i put SignalSim And ShowerSim Info
     #here i could save other simulation. For now, i save a copy. I could modify some fields to show this is an interpolation
     CurrentShowerSimInfo=hdf5io.GetShowerSimInfo(InputFilename,CurrentEventName)
     hdf5io.SaveShowerSimInfo(OutputFilename,CurrentShowerSimInfo,CurrentEventName)
@@ -623,8 +623,9 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     else:
       usetracelist=[str(usetrace)]
 
-    for usetrace in usetracelist:
-        print("computing for "+usetrace)
+    for tracetype in usetracelist:
+        print("computing for "+tracetype)
+        remove_antenna=[] #this will be cleared for each trace type we loop on, but since the 3 are discarding the same antenas, its ok
 
         #i loops only over desired in-plane positions, acting as new reference
         for i in np.arange(0,len(pos_des[:,1])):  # position should be within one plane yz plane, remove x=v component for simplicity
@@ -688,29 +689,31 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
 
             if(bailoutI==1 or bailoutIV==1 or (bailoutII==1 and bailoutIII==0) or (bailoutII==0 and bailoutII==1)):
               #antenas to remove
+              #print(str(i)+" antenna is outside of the starshape patern, removing it")
+              remove_antenna.append(i)
 
-              AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,0) #this is just to get the sape of what i have to save with 0s
-              if(usetrace=='efield'):
-                  txt0=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-              elif(usetrace=='voltage'):
-                  txt0=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-              elif(usetrace=='filteredvoltage'):
-                  txt0=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-              else:
-                  print("You must specify either efield, voltage or filteredvoltage, bailing out")
+              #AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,0) #this is just to get the sape of what i have to save with 0s
+              #if(tracetype=='efield'):
+              #    txt0=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
+              #elif(tracetype=='voltage'):
+              #    txt0=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
+              #elif(tracetype=='filteredvoltage'):
+              #    txt0=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
+              #else:
+              #    print("You must specify either efield, voltage or filteredvoltage, bailing out")
 
-              if(usetrace=='efield'):
-                efield=np.zeros(np.shape(txt0))
-                EfieldTable=hdf5io.CreateEfieldTable(efield, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
-                hdf5io.SaveEfieldTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),EfieldTable)
-              elif(usetrace=='voltage'):
-                voltage=np.zeros(np.shape(txt0))
-                VoltageTable=hdf5io.CreateVoltageTable(voltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
-                hdf5io.SaveVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
-              elif(usetrace=='filteredvoltage'):
-                filteredvoltage=np.zeros(np.shape(txt0))
-                VoltageTable=hdf5io.CreateVoltageTable(filteredvoltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
-                hdf5io.SaveFilteredVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
+              #if(tracetype=='efield'):
+              #  efield=np.zeros(np.shape(txt0))
+              #  EfieldTable=hdf5io.CreateEfieldTable(efield, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
+              #  hdf5io.SaveEfieldTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),EfieldTable)
+              #elif(tracetype=='voltage'):
+              #  voltage=np.zeros(np.shape(txt0))
+              #  VoltageTable=hdf5io.CreateVoltageTable(voltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
+              #  hdf5io.SaveVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
+              #elif(tracetype=='filteredvoltage'):
+              #  filteredvoltage=np.zeros(np.shape(txt0))
+              #  VoltageTable=hdf5io.CreateVoltageTable(filteredvoltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
+              #  hdf5io.SaveFilteredVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
 
 
 
@@ -817,33 +820,33 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
 
                 ## the interpolation of the pulse shape is performed, in x, y and z component
                 AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_I[0][0])
-                if(usetrace=='efield'):
+                if(tracetype=='efield'):
                   txt0=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                elif(usetrace=='voltage'):
+                elif(tracetype=='voltage'):
                   txt0=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                elif(usetrace=='filteredvoltage'):
+                elif(tracetype=='filteredvoltage'):
                   txt0=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
                 else:
                   print('You must specify either efield, voltage or filteredvoltage, bailing out')
                   return 0
 
                 AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_IV[0][0])
-                if(usetrace=='efield'):
+                if(tracetype=='efield'):
                   txt1=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                elif(usetrace=='voltage'):
+                elif(tracetype=='voltage'):
                   txt1=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                elif(usetrace=='filteredvoltage'):
+                elif(tracetype=='filteredvoltage'):
                   txt1=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
                 else:
                   print('You must specify either efield, voltage or filteredvoltage, bailing out')
                   return 0
 
                 AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_II[0][0])
-                if(usetrace=='efield'):
+                if(tracetype=='efield'):
                   txt2=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                elif(usetrace=='voltage'):
+                elif(tracetype=='voltage'):
                   txt2=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                elif(usetrace=='filteredvoltage'):
+                elif(tracetype=='filteredvoltage'):
                   txt2=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
                 else:
                   print('You must specify either efield, voltage or filteredvoltage, bailing out')
@@ -851,11 +854,11 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
 
 
                 AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_III[0][0])
-                if(usetrace=='efield'):
+                if(tracetype=='efield'):
                   txt3=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                elif(usetrace=='voltage'):
+                elif(tracetype=='voltage'):
                   txt3=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                elif(usetrace=='filteredvoltage'):
+                elif(tracetype=='filteredvoltage'):
                   txt3=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
                 else:
                   print('You must specify either efield, voltage or filteredvoltage, bailing out')
@@ -963,11 +966,11 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 if DEVELOPMENT and DISPLAY:
 
                    AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,160+i)
-                   if(usetrace=='efield'):
+                   if(tracetype=='efield'):
                       txtdes=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                   elif(usetrace=='voltage'):
+                   elif(tracetype=='voltage'):
                       txtdes=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                   elif(usetrace=='filteredvoltage'):
+                   elif(tracetype=='filteredvoltage'):
                       txtdes=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
                    else:
                       print('You must specify either efield, voltage or filteredvoltage, bailing out')
@@ -1024,15 +1027,15 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 #        print("%3.2f %1.5e %1.5e %1.5e" % (xnew_desiredx[j], tracedes_desiredx[j], tracedes_desiredy[j], tracedes_desiredz[j]), end='\n', file=FILE)
                 #FILE.close()
 
-                if(usetrace=='efield'):
+                if(tracetype=='efield'):
                     efield=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     EfieldTable=hdf5io.CreateEfieldTable(efield, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
                     hdf5io.SaveEfieldTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),EfieldTable)
-                elif(usetrace=='voltage'):
+                elif(tracetype=='voltage'):
                     voltage=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     VoltageTable=hdf5io.CreateVoltageTable(voltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
                     hdf5io.SaveVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
-                elif(usetrace=='filteredvoltage'):
+                elif(tracetype=='filteredvoltage'):
                     filteredvoltage=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     VoltageTable=hdf5io.CreateVoltageTable(filteredvoltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
                     hdf5io.SaveFilteredVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
@@ -1041,13 +1044,25 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 #delete after iterate
                 del points_I, points_II, points_III, points_IV
 
+
+    #now, lets remove the antennas fromthe index
+    #for i in remove_antenna:
+    DesiredIds=np.delete(DesiredIds,remove_antenna)
+    DesiredAntx=np.delete(DesiredAntx,remove_antenna)
+    DesiredAnty=np.delete(DesiredAnty,remove_antenna)
+    DesiredAntz=np.delete(DesiredAntz,remove_antenna)
+    DesiredSlopeA=np.delete(DesiredSlopeA,remove_antenna)
+    DesiredSlopeB=np.delete(DesiredSlopeB,remove_antenna)
+    DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta)
+    hdf5io.SaveAntennaInfo(OutputFilename,DesiredAntennaInfo,CurrentEventName)
+
     #now aim at the point where all the antennas where interpolated and saved to file. Now i will calulate the peak to peak and hilbert envelope peak and time
     #this is done after everything was computed.
     if(usetrace=="all"):
       print("Computing P2P for "+str(OutputFilename))
 
       OutAntennaInfo=hdf5io.GetAntennaInfo(OutputFilename,CurrentEventName)
-      OutIDs=GetAntIDFromAntennaInfo(OutAntennaInfo)
+      OutIDs=hdf5io.GetAntIDFromAntennaInfo(OutAntennaInfo)
 
       p2pE=hdf5io.get_p2p_hdf5(OutputFilename,usetrace='efield')
       p2pV=hdf5io.get_p2p_hdf5(OutputFilename,usetrace='voltage')
@@ -1057,7 +1072,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
       peaktimeV, peakV=hdf5io.get_peak_time_hilbert_hdf5(OutputFilename,usetrace='voltage')
       peaktimeFV, peakFV=hdf5io.get_peak_time_hilbert_hdf5(OutputFilename,usetrace='filteredvoltage')
 
-      AntennaP2PInfo=hdf5io.CreateAntennaP2PInfo(OutIDs, AntennaInfoMeta, P2Pefield=p2pE,P2Pvoltage=p2pV,P2Pfiltered=p2pFV,HilbertPeakE=peakE,HilbertPeakV=peakV,HilbertPeakFV=peakFV,HilbertPeakTimeE=peaktimeE,HilbertPeakTimeV=peaktimeV,HilbertPeakTimeFV=peaktimeFV)
+      AntennaP2PInfo=hdf5io.CreateAntennaP2PInfo(OutIDs, DesiredAntennaInfoMeta, P2Pefield=p2pE,P2Pvoltage=p2pV,P2Pfiltered=p2pFV,HilbertPeakE=peakE,HilbertPeakV=peakV,HilbertPeakFV=peakFV,HilbertPeakTimeE=peaktimeE,HilbertPeakTimeV=peaktimeV,HilbertPeakTimeFV=peaktimeFV)
       hdf5io.SaveAntennaP2PInfo(OutputFilename,AntennaP2PInfo,CurrentEventName)
 
 
