@@ -406,7 +406,7 @@ def _ProjectPointOnLine(a, b, p):
 #################################
 
 
-def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, antennamax=159, threshold=0, EventNumber=0,shower_core=np.array([0,0,0]), DISPLAY=False, usetrace='efield'):
+def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, antennamax=159, EventNumber=0,shower_core=np.array([0,0,0]), DISPLAY=False, usetrace='efield'):
     '''
     Reads in arrays, looks for neighbours, calls the interpolation and saves the traces
 
@@ -419,8 +419,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
         The script accepts starshape as well as grid arrays
     antennamin,antennamax:int
         the program is designed to run on the first 160 antennas. If your simulation has more, you can specify a range to be used...but it has to be tested
-    threshold :float
-        minumum value of p2p in at least one channel of the 4 neighbor antennas to proceed with interpolation (8.66 guarantees minumum p2p of 15 in interpolated (15/sqrt3))
     EventNumber: int
         number of event in the file to use. you can process only one at a time
     shower_core: numpy array
@@ -689,6 +687,8 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 print("I cannot find antennas with lower r, lets try using only the inner antennas")
 
             if(bailoutI==1 or bailoutIV==1 or (bailoutII==1 and bailoutIII==0) or (bailoutII==0 and bailoutII==1)):
+              #antenas to remove
+
               AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,0) #this is just to get the sape of what i have to save with 0s
               if(usetrace=='efield'):
                   txt0=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
@@ -816,12 +816,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 # ------------------
 
                 ## the interpolation of the pulse shape is performed, in x, y and z component
-                # TODO: read-in table instead textfile
-                bailout0=0
-                bailout1=0
-                bailout2=0
-                bailout3=0
-
                 AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_I[0][0])
                 if(usetrace=='efield'):
                   txt0=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
@@ -832,12 +826,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 else:
                   print('You must specify either efield, voltage or filteredvoltage, bailing out')
                   return 0
-
-                if(threshold>0):
-                  p2p= np.amax(txt0,axis=0)-np.amin(txt0,axis=0)
-                  if(max(p2p[1:3])<threshold and threshold>0):
-                  #print(max(p2p[1:3]))
-                    bailout0=1
 
                 AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_IV[0][0])
                 if(usetrace=='efield'):
@@ -850,12 +838,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                   print('You must specify either efield, voltage or filteredvoltage, bailing out')
                   return 0
 
-                if(threshold>0):
-                  p2p= np.amax(txt1,axis=0)-np.amin(txt1,axis=0)
-                  if(max(p2p[1:3])<threshold):
-                    #print(max(p2p[1:3]))
-                    bailout1=1
-
                 AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_II[0][0])
                 if(usetrace=='efield'):
                   txt2=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
@@ -867,11 +849,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                   print('You must specify either efield, voltage or filteredvoltage, bailing out')
                   return 0
 
-                if(threshold>0):
-                  p2p= np.amax(txt2,axis=0)-np.amin(txt2,axis=0)
-                  if(max(p2p[1:3])<threshold):
-                    #print(max(p2p[1:3]))
-                    bailout2=1
 
                 AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,points_III[0][0])
                 if(usetrace=='efield'):
@@ -884,208 +861,185 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                   print('You must specify either efield, voltage or filteredvoltage, bailing out')
                   return 0
 
-                if(threshold>0):
-                  p2p= np.amax(txt3,axis=0)-np.amin(txt3,axis=0)
-                  if(max(p2p[1:3])<threshold):
-                    #print(max(p2p[1:3]))
-                    bailout3=1
+                matias_patch_to_point_I=np.array([0,pos_sims[points_I[0][0]][1],pos_sims[points_I[0][0]][2]])
+                matias_patch_to_point_II=np.array([0,pos_sims[points_II[0][0]][1],pos_sims[points_II[0][0]][2]])
+                matias_patch_to_point_III=np.array([0,pos_sims[points_III[0][0]][1],pos_sims[points_III[0][0]][2]])
+                matias_patch_to_point_IV=np.array([0,pos_sims[points_IV[0][0]][1],pos_sims[points_IV[0][0]][2]])
 
-                if(bailout0==1 and bailout1==1 and bailout2==1 and bailout3==1):
-                  print("desired antenna " + str(i) + " had all neighbors below threshold of " + str(threshold)+ ",setting interpolated signal to 0")
-                  if(usetrace=='efield'):
-                    efield=np.zeros(np.shape(txt0))
+                xnew1, tracedes1x = interpolate_trace(txt0.T[0], txt0.T[1], matias_patch_to_point_I , txt1.T[0], txt1.T[1], matias_patch_to_point_IV, point_online1 ,upsampling=None, zeroadding=None)
+                xnew1, tracedes1y = interpolate_trace(txt0.T[0], txt0.T[2], matias_patch_to_point_I , txt1.T[0], txt1.T[2], matias_patch_to_point_IV, point_online1 ,upsampling=None, zeroadding=None)
+                xnew1, tracedes1z = interpolate_trace(txt0.T[0], txt0.T[3], matias_patch_to_point_I , txt1.T[0], txt1.T[3], matias_patch_to_point_IV, point_online1 ,upsampling=None, zeroadding=None)
+
+                #xnew1, tracedes1x = interpolate_trace(txt0.T[0], txt0.T[1], positions_sims[points_I[0][0]] , txt1.T[0], txt1.T[1], positions_sims[points_IV[0][0]], point_online1 ,upsampling=None, zeroadding=None)
+                #xnew1, tracedes1y = interpolate_trace(txt0.T[0], txt0.T[2], positions_sims[points_I[0][0]] , txt1.T[0], txt1.T[2], positions_sims[points_IV[0][0]], point_online1 ,upsampling=None, zeroadding=None)
+                #xnew1, tracedes1z = interpolate_trace(txt0.T[0], txt0.T[3], positions_sims[points_I[0][0]] , txt1.T[0], txt1.T[3], positions_sims[points_IV[0][0]], point_online1 ,upsampling=None, zeroadding=None)
+
+                xnew2, tracedes2x = interpolate_trace(txt2.T[0], txt2.T[1], matias_patch_to_point_II , txt3.T[0], txt3.T[1], matias_patch_to_point_III, point_online2 ,upsampling=None, zeroadding=None)
+                xnew2, tracedes2y = interpolate_trace(txt2.T[0], txt2.T[2], matias_patch_to_point_II , txt3.T[0], txt3.T[2], matias_patch_to_point_III, point_online2 ,upsampling=None, zeroadding=None)
+                xnew2, tracedes2z = interpolate_trace(txt2.T[0], txt2.T[3], matias_patch_to_point_II , txt3.T[0], txt3.T[3], matias_patch_to_point_III, point_online2 ,upsampling=None, zeroadding=None)
+
+                #xnew2, tracedes2x = interpolate_trace(txt2.T[0], txt2.T[1], positions_sims[points_II[0][0]] , txt3.T[0], txt3.T[1], positions_sims[points_III[0][0]], point_online2 ,upsampling=None, zeroadding=None)
+                #xnew2, tracedes2y = interpolate_trace(txt2.T[0], txt2.T[2], positions_sims[points_II[0][0]] , txt3.T[0], txt3.T[2], positions_sims[points_III[0][0]], point_online2 ,upsampling=None, zeroadding=None)
+                #xnew2, tracedes2z = interpolate_trace(txt2.T[0], txt2.T[3], positions_sims[points_II[0][0]] , txt3.T[0], txt3.T[3], positions_sims[points_III[0][0]], point_online2 ,upsampling=None, zeroadding=None)
+
+                ###### Get the pulse shape of the desired position from projection on line1 and 2
+                xnew_desiredx, tracedes_desiredx =interpolate_trace(xnew1, tracedes1x, point_online1, xnew2, tracedes2x, point_online2, np.array([0,pos_des[i,1],pos_des[i,2]]), zeroadding=None)
+                xnew_desiredy, tracedes_desiredy =interpolate_trace(xnew1, tracedes1y, point_online1, xnew2, tracedes2y, point_online2, np.array([0,pos_des[i,1],pos_des[i,2]]), zeroadding=None)
+                xnew_desiredz, tracedes_desiredz =interpolate_trace(xnew1, tracedes1z, point_online1, xnew2, tracedes2z, point_online2, np.array([0,pos_des[i,1],pos_des[i,2]]), zeroadding=None)
+
+
+                #now, lets use zhaires timing solution
+                #print("trying to get the ant0",points_II[0][0])
+                azimuthdeg=180.+Azimuth
+                zenithdeg=180.-Zenith
+                if(zenithdeg>=360.0):
+                 zenithdeg=zenithdeg-360.0
+                #print(azimuthdeg,zenithdeg)
+                #positions_des
+                #print(xpoints[points_II[0][0]],ypoints[points_II[0][0]],zpoints[points_II[0][0]])
+                #t0=get_antenna_t0(xpoints[points_II[0][0]],ypoints[points_II[0][0]],zpoints[points_II[0][0]]-2900, azimuthdeg, zenithdeg)
+                #print("trying to get the ant0:",i)
+                #print(i,DesiredAntx[i],DesiredAnty[i],DesiredAntz[i])
+                GroundAltitude=hdf5io.GetGroundAltitude(CurrentEventInfo)
+                t0=get_antenna_t0(DesiredAntx[i],DesiredAnty[i],DesiredAntz[i]-GroundAltitude, azimuthdeg, zenithdeg)
+                tbinsize=hdf5io.GetTimeBinSize(CurrentSignalSimInfo)
+                tmin=hdf5io.GetTimeWindowMin(CurrentSignalSimInfo)
+                tmax=hdf5io.GetTimeWindowMax(CurrentSignalSimInfo)
+                ntbins=len(xnew_desiredx)
+                xnew_desiredx=np.linspace(t0+tmin,t0+tmax-tbinsize*2,ntbins)
+                xnew_desiredy=xnew_desiredx
+                xnew_desiredz=xnew_desiredx
+
+                if(len(xnew_desiredx)!=ntbins):
+                 print("different sizes",ntbins,len(xnew_desiredx))
+                 print(tmin,tmax,tbinsize,ntbins)
+                if((xnew_desiredx[2]-xnew_desiredx[1])!=tbinsize):
+                 print("different tbin sizes",tbinsize,xnew_desiredx[2]-xnew_desiredx[1])
+                 print(tmin,tmax,tbinsize,ntbins)
+
+
+                if DISPLAY:
+                    fig4 = plt.figure()
+                    ax4 = fig4.add_subplot(1,2,2)
+                    ax4.plot(txt0.T[0], txt0.T[2], label = "I")
+                    ax4.plot(txt2.T[0], txt2.T[2], label = "II")
+                    ax4.plot(txt3.T[0], txt3.T[2], label = "III")
+                    ax4.plot(txt1.T[0], txt1.T[2], label = "IV")
+                    ax4.plot(xnew1, tracedes1y, linestyle='--',color='r',label = "I->IV")
+                    ax4.plot(xnew2, tracedes2y, linestyle='--', color='b',label = "II->III")
+                    ax4.plot(xnew_desiredx, tracedes_desiredy, linestyle='--',color='k', label = "desired")
+
+                    plt.title("Y component Signals:"+str(i))
+                    plt.legend(loc=2)
+
+                    ax3 = fig4.add_subplot(1,2,1)
+
+                    ax3.scatter(pos_sims[:,1], pos_sims[:,2], color='c',label = "simulated")
+                    ax3.scatter(pos_sims[points_I[0][0],1], pos_sims[points_I[0][0],2], marker ="D",label = "I")
+                    ax3.scatter(pos_sims[points_II[0][0],1], pos_sims[points_II[0][0],2],marker ="D", label = "II")
+                    ax3.scatter(pos_sims[points_III[0][0],1], pos_sims[points_III[0][0],2], marker ="D", label = "III")
+                    ax3.scatter(pos_sims[points_IV[0][0],1], pos_sims[points_IV[0][0],2], marker ="D",label = "IV")
+
+                    #print("desired "+str(pos_des[i]))
+                    #print("pointI "+str(points_I[0]))
+                    #print("pointII "+str(points_II[0]))
+                    #print("pointIII "+str(points_III[0]))
+                    #print("pointIV "+str(points_IV[0]))
+
+                    ax3.scatter(point_online1[1], point_online1[2], marker ="x",color='r',label = "I->IV")
+                    ax3.scatter(point_online2[1], point_online2[2], marker ="x",color='b',label = "II->III")
+                    ax3.scatter(pos_des[i,1], pos_des[i,2], color= 'k',label = "desired")
+
+                    ax3.scatter(0, 0, marker ="x",  label = "core")
+                    ax3.plot([0, pos_des[i,1]], [0, pos_des[i,2]])
+
+                    for j in range(0,len(pos_sims[:,1])):
+                        ax3.annotate(str(j), ((pos_sims[j,1], pos_sims[j,2])))
+
+                    plt.title("Test Antenna "+str(i))
+                    plt.legend(loc=2)
+                    #plt.show()
+
+                if DEVELOPMENT and DISPLAY:
+
+                   AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,160+i)
+                   if(usetrace=='efield'):
+                      txtdes=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
+                   elif(usetrace=='voltage'):
+                      txtdes=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
+                   elif(usetrace=='filteredvoltage'):
+                      txtdes=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
+                   else:
+                      print('You must specify either efield, voltage or filteredvoltage, bailing out')
+                      return 0
+                  #txtdes= load_trace(directory, 160+i, suffix=".trace")
+                   fig5 = plt.figure()
+                   ax5 = fig5.add_subplot(3,2,1)
+
+                   #ax5.plot(xnew_desiredx, tracedes_desiredy, linestyle='--',color='k', label = "desired")
+                   #ax5.plot(xnew1, tracedes1y, linestyle='--',color='r',label = "I->IV")
+                   #ax5.plot(xnew2, tracedes2y, linestyle='--', color='b',label = "II->III")
+                   ax5.plot(xnew_desiredx, tracedes_desiredx, linestyle='--',color='g', label = "desired")
+                   ax5.plot(txtdes.T[0], txtdes.T[1], label = "simulation")
+                   plt.title("X component Signals:"+str(i))
+                   plt.legend(loc=2)
+
+                   ax6 = fig5.add_subplot(3,2,2)
+                   ax6.plot(txtdes.T[0], tracedes_desiredx-txtdes.T[1], linestyle='--',color='g', label = "absolute diference")
+                   plt.legend(loc=2)
+
+                   ax5b = fig5.add_subplot(3,2,3)
+                   ax5b.plot(xnew_desiredy, tracedes_desiredy, linestyle='--',color='g', label = "desired")
+                   ax5b.plot(txtdes.T[0], txtdes.T[2], label = "simulation")
+                   plt.title("Y component Signals:"+str(i))
+                   plt.legend(loc=2)
+
+                   ax6b = fig5.add_subplot(3,2,4)
+                   ax6b.plot(txtdes.T[0], tracedes_desiredy-txtdes.T[2], linestyle='--',color='g', label = "absolute diference")
+                   plt.legend(loc=2)
+
+                   ax5b = fig5.add_subplot(3,2,5)
+                   ax5b.plot(xnew_desiredz, tracedes_desiredz, linestyle='--',color='g', label = "desired")
+                   ax5b.plot(txtdes.T[0], txtdes.T[3], label = "simulation")
+                   plt.title("Z component Signals:"+str(i))
+                   plt.legend(loc=2)
+
+                   ax6b = fig5.add_subplot(3,2,6)
+                   ax6b.plot(txtdes.T[0], tracedes_desiredz-txtdes.T[3], linestyle='--',color='g', label = "absolute diference")
+                   plt.legend(loc=2)
+
+                if DISPLAY:
+                  plt.show()
+
+                # ------------------
+
+                # Save as textfile
+                #print("Interpolated trace stord as ",split(desired)[0]+ '/a'+str(ind[i])+'.trace')
+                #os.system('rm ' + split(desired)[0] + '/*.trace')
+                #FILE = open(split(desired)[0]+ '/a'+str(ind[i])+'.trace', "w+" )
+
+                #uncomment this if you want the old style output
+                #FILE = open(directory+ '/Test/a'+str(ind[i])+'.trace', "w+" )
+                #for j in range( 0, len(xnew_desiredx) ):
+                #        print("%3.2f %1.5e %1.5e %1.5e" % (xnew_desiredx[j], tracedes_desiredx[j], tracedes_desiredy[j], tracedes_desiredz[j]), end='\n', file=FILE)
+                #FILE.close()
+
+                if(usetrace=='efield'):
+                    efield=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     EfieldTable=hdf5io.CreateEfieldTable(efield, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
                     hdf5io.SaveEfieldTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),EfieldTable)
-                  elif(usetrace=='voltage'):
-                    voltage=np.zeros(np.shape(txt0))
+                elif(usetrace=='voltage'):
+                    voltage=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     VoltageTable=hdf5io.CreateVoltageTable(voltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
                     hdf5io.SaveVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
-                  elif(usetrace=='filteredvoltage'):
-                    filteredvoltage=np.zeros(np.shape(txt0))
+                elif(usetrace=='filteredvoltage'):
+                    filteredvoltage=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     VoltageTable=hdf5io.CreateVoltageTable(filteredvoltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
                     hdf5io.SaveFilteredVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
 
-                else:
-                  if True:
-                    matias_patch_to_point_I=np.array([0,pos_sims[points_I[0][0]][1],pos_sims[points_I[0][0]][2]])
-                    matias_patch_to_point_II=np.array([0,pos_sims[points_II[0][0]][1],pos_sims[points_II[0][0]][2]])
-                    matias_patch_to_point_III=np.array([0,pos_sims[points_III[0][0]][1],pos_sims[points_III[0][0]][2]])
-                    matias_patch_to_point_IV=np.array([0,pos_sims[points_IV[0][0]][1],pos_sims[points_IV[0][0]][2]])
 
-                    xnew1, tracedes1x = interpolate_trace(txt0.T[0], txt0.T[1], matias_patch_to_point_I , txt1.T[0], txt1.T[1], matias_patch_to_point_IV, point_online1 ,upsampling=None, zeroadding=None)
-                    xnew1, tracedes1y = interpolate_trace(txt0.T[0], txt0.T[2], matias_patch_to_point_I , txt1.T[0], txt1.T[2], matias_patch_to_point_IV, point_online1 ,upsampling=None, zeroadding=None)
-                    xnew1, tracedes1z = interpolate_trace(txt0.T[0], txt0.T[3], matias_patch_to_point_I , txt1.T[0], txt1.T[3], matias_patch_to_point_IV, point_online1 ,upsampling=None, zeroadding=None)
-
-                    #xnew1, tracedes1x = interpolate_trace(txt0.T[0], txt0.T[1], positions_sims[points_I[0][0]] , txt1.T[0], txt1.T[1], positions_sims[points_IV[0][0]], point_online1 ,upsampling=None, zeroadding=None)
-                    #xnew1, tracedes1y = interpolate_trace(txt0.T[0], txt0.T[2], positions_sims[points_I[0][0]] , txt1.T[0], txt1.T[2], positions_sims[points_IV[0][0]], point_online1 ,upsampling=None, zeroadding=None)
-                    #xnew1, tracedes1z = interpolate_trace(txt0.T[0], txt0.T[3], positions_sims[points_I[0][0]] , txt1.T[0], txt1.T[3], positions_sims[points_IV[0][0]], point_online1 ,upsampling=None, zeroadding=None)
-
-                    xnew2, tracedes2x = interpolate_trace(txt2.T[0], txt2.T[1], matias_patch_to_point_II , txt3.T[0], txt3.T[1], matias_patch_to_point_III, point_online2 ,upsampling=None, zeroadding=None)
-                    xnew2, tracedes2y = interpolate_trace(txt2.T[0], txt2.T[2], matias_patch_to_point_II , txt3.T[0], txt3.T[2], matias_patch_to_point_III, point_online2 ,upsampling=None, zeroadding=None)
-                    xnew2, tracedes2z = interpolate_trace(txt2.T[0], txt2.T[3], matias_patch_to_point_II , txt3.T[0], txt3.T[3], matias_patch_to_point_III, point_online2 ,upsampling=None, zeroadding=None)
-
-                    #xnew2, tracedes2x = interpolate_trace(txt2.T[0], txt2.T[1], positions_sims[points_II[0][0]] , txt3.T[0], txt3.T[1], positions_sims[points_III[0][0]], point_online2 ,upsampling=None, zeroadding=None)
-                    #xnew2, tracedes2y = interpolate_trace(txt2.T[0], txt2.T[2], positions_sims[points_II[0][0]] , txt3.T[0], txt3.T[2], positions_sims[points_III[0][0]], point_online2 ,upsampling=None, zeroadding=None)
-                    #xnew2, tracedes2z = interpolate_trace(txt2.T[0], txt2.T[3], positions_sims[points_II[0][0]] , txt3.T[0], txt3.T[3], positions_sims[points_III[0][0]], point_online2 ,upsampling=None, zeroadding=None)
-
-                    ###### Get the pulse shape of the desired position from projection on line1 and 2
-                    xnew_desiredx, tracedes_desiredx =interpolate_trace(xnew1, tracedes1x, point_online1, xnew2, tracedes2x, point_online2, np.array([0,pos_des[i,1],pos_des[i,2]]), zeroadding=None)
-                    xnew_desiredy, tracedes_desiredy =interpolate_trace(xnew1, tracedes1y, point_online1, xnew2, tracedes2y, point_online2, np.array([0,pos_des[i,1],pos_des[i,2]]), zeroadding=None)
-                    xnew_desiredz, tracedes_desiredz =interpolate_trace(xnew1, tracedes1z, point_online1, xnew2, tracedes2z, point_online2, np.array([0,pos_des[i,1],pos_des[i,2]]), zeroadding=None)
-
-
-                    #now, lets use zhaires timing solution
-                    #print("trying to get the ant0",points_II[0][0])
-                    azimuthdeg=180.+Azimuth
-                    zenithdeg=180.-Zenith
-                    if(zenithdeg>=360.0):
-                     zenithdeg=zenithdeg-360.0
-                    #print(azimuthdeg,zenithdeg)
-                    #positions_des
-                    #print(xpoints[points_II[0][0]],ypoints[points_II[0][0]],zpoints[points_II[0][0]])
-                    #t0=get_antenna_t0(xpoints[points_II[0][0]],ypoints[points_II[0][0]],zpoints[points_II[0][0]]-2900, azimuthdeg, zenithdeg)
-                    #print("trying to get the ant0:",i)
-                    #print(i,DesiredAntx[i],DesiredAnty[i],DesiredAntz[i])
-                    GroundAltitude=hdf5io.GetGroundAltitude(CurrentEventInfo)
-                    t0=get_antenna_t0(DesiredAntx[i],DesiredAnty[i],DesiredAntz[i]-GroundAltitude, azimuthdeg, zenithdeg)
-                    tbinsize=hdf5io.GetTimeBinSize(CurrentSignalSimInfo)
-                    tmin=hdf5io.GetTimeWindowMin(CurrentSignalSimInfo)
-                    tmax=hdf5io.GetTimeWindowMax(CurrentSignalSimInfo)
-                    ntbins=len(xnew_desiredx)
-                    xnew_desiredx=np.linspace(t0+tmin,t0+tmax-tbinsize*2,ntbins)
-                    xnew_desiredy=xnew_desiredx
-                    xnew_desiredz=xnew_desiredx
-
-                    if(len(xnew_desiredx)!=ntbins):
-                     print("different sizes",ntbins,len(xnew_desiredx))
-                     print(tmin,tmax,tbinsize,ntbins)
-                    if((xnew_desiredx[2]-xnew_desiredx[1])!=tbinsize):
-                     print("different tbin sizes",tbinsize,xnew_desiredx[2]-xnew_desiredx[1])
-                     print(tmin,tmax,tbinsize,ntbins)
-
-
-                    if DISPLAY:
-                        fig4 = plt.figure()
-                        ax4 = fig4.add_subplot(1,2,2)
-                        ax4.plot(txt0.T[0], txt0.T[2], label = "I")
-                        ax4.plot(txt2.T[0], txt2.T[2], label = "II")
-                        ax4.plot(txt3.T[0], txt3.T[2], label = "III")
-                        ax4.plot(txt1.T[0], txt1.T[2], label = "IV")
-                        ax4.plot(xnew1, tracedes1y, linestyle='--',color='r',label = "I->IV")
-                        ax4.plot(xnew2, tracedes2y, linestyle='--', color='b',label = "II->III")
-                        ax4.plot(xnew_desiredx, tracedes_desiredy, linestyle='--',color='k', label = "desired")
-
-                        plt.title("Y component Signals:"+str(i))
-                        plt.legend(loc=2)
-
-                        ax3 = fig4.add_subplot(1,2,1)
-
-                        ax3.scatter(pos_sims[:,1], pos_sims[:,2], color='c',label = "simulated")
-                        ax3.scatter(pos_sims[points_I[0][0],1], pos_sims[points_I[0][0],2], marker ="D",label = "I")
-                        ax3.scatter(pos_sims[points_II[0][0],1], pos_sims[points_II[0][0],2],marker ="D", label = "II")
-                        ax3.scatter(pos_sims[points_III[0][0],1], pos_sims[points_III[0][0],2], marker ="D", label = "III")
-                        ax3.scatter(pos_sims[points_IV[0][0],1], pos_sims[points_IV[0][0],2], marker ="D",label = "IV")
-
-                        #print("desired "+str(pos_des[i]))
-                        #print("pointI "+str(points_I[0]))
-                        #print("pointII "+str(points_II[0]))
-                        #print("pointIII "+str(points_III[0]))
-                        #print("pointIV "+str(points_IV[0]))
-
-                        ax3.scatter(point_online1[1], point_online1[2], marker ="x",color='r',label = "I->IV")
-                        ax3.scatter(point_online2[1], point_online2[2], marker ="x",color='b',label = "II->III")
-                        ax3.scatter(pos_des[i,1], pos_des[i,2], color= 'k',label = "desired")
-
-                        ax3.scatter(0, 0, marker ="x",  label = "core")
-                        ax3.plot([0, pos_des[i,1]], [0, pos_des[i,2]])
-
-                        for j in range(0,len(pos_sims[:,1])):
-                            ax3.annotate(str(j), ((pos_sims[j,1], pos_sims[j,2])))
-
-                        plt.title("Test Antenna "+str(i))
-                        plt.legend(loc=2)
-                        #plt.show()
-
-                    if DEVELOPMENT and DISPLAY:
-
-                       AntennaID=hdf5io.GetAntennaID(CurrentAntennaInfo,160+i)
-                       if(usetrace=='efield'):
-                          txtdes=hdf5io.GetAntennaEfield(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                       elif(usetrace=='voltage'):
-                          txtdes=hdf5io.GetAntennaVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                       elif(usetrace=='filteredvoltage'):
-                          txtdes=hdf5io.GetAntennaFilteredVoltage(InputFilename,CurrentEventName,AntennaID,OutputFormat="numpy")
-                       else:
-                          print('You must specify either efield, voltage or filteredvoltage, bailing out')
-                          return 0
-                      #txtdes= load_trace(directory, 160+i, suffix=".trace")
-                       fig5 = plt.figure()
-                       ax5 = fig5.add_subplot(3,2,1)
-
-                       #ax5.plot(xnew_desiredx, tracedes_desiredy, linestyle='--',color='k', label = "desired")
-                       #ax5.plot(xnew1, tracedes1y, linestyle='--',color='r',label = "I->IV")
-                       #ax5.plot(xnew2, tracedes2y, linestyle='--', color='b',label = "II->III")
-                       ax5.plot(xnew_desiredx, tracedes_desiredx, linestyle='--',color='g', label = "desired")
-                       ax5.plot(txtdes.T[0], txtdes.T[1], label = "simulation")
-                       plt.title("X component Signals:"+str(i))
-                       plt.legend(loc=2)
-
-                       ax6 = fig5.add_subplot(3,2,2)
-                       ax6.plot(txtdes.T[0], tracedes_desiredx-txtdes.T[1], linestyle='--',color='g', label = "absolute diference")
-                       plt.legend(loc=2)
-
-                       ax5b = fig5.add_subplot(3,2,3)
-                       ax5b.plot(xnew_desiredy, tracedes_desiredy, linestyle='--',color='g', label = "desired")
-                       ax5b.plot(txtdes.T[0], txtdes.T[2], label = "simulation")
-                       plt.title("Y component Signals:"+str(i))
-                       plt.legend(loc=2)
-
-                       ax6b = fig5.add_subplot(3,2,4)
-                       ax6b.plot(txtdes.T[0], tracedes_desiredy-txtdes.T[2], linestyle='--',color='g', label = "absolute diference")
-                       plt.legend(loc=2)
-
-                       ax5b = fig5.add_subplot(3,2,5)
-                       ax5b.plot(xnew_desiredz, tracedes_desiredz, linestyle='--',color='g', label = "desired")
-                       ax5b.plot(txtdes.T[0], txtdes.T[3], label = "simulation")
-                       plt.title("Z component Signals:"+str(i))
-                       plt.legend(loc=2)
-
-                       ax6b = fig5.add_subplot(3,2,6)
-                       ax6b.plot(txtdes.T[0], tracedes_desiredz-txtdes.T[3], linestyle='--',color='g', label = "absolute diference")
-                       plt.legend(loc=2)
-
-                    if DISPLAY:
-                      plt.show()
-
-                    # ------------------
-
-                    # Save as textfile
-                    #print("Interpolated trace stord as ",split(desired)[0]+ '/a'+str(ind[i])+'.trace')
-                    #os.system('rm ' + split(desired)[0] + '/*.trace')
-                    #FILE = open(split(desired)[0]+ '/a'+str(ind[i])+'.trace', "w+" )
-
-                    #uncomment this if you want the old style output
-                    #FILE = open(directory+ '/Test/a'+str(ind[i])+'.trace', "w+" )
-                    #for j in range( 0, len(xnew_desiredx) ):
-                    #        print("%3.2f %1.5e %1.5e %1.5e" % (xnew_desiredx[j], tracedes_desiredx[j], tracedes_desiredy[j], tracedes_desiredz[j]), end='\n', file=FILE)
-                    #FILE.close()
-
-                    if(usetrace=='efield'):
-                        efield=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
-                        EfieldTable=hdf5io.CreateEfieldTable(efield, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
-                        hdf5io.SaveEfieldTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),EfieldTable)
-                    elif(usetrace=='voltage'):
-                        voltage=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
-                        VoltageTable=hdf5io.CreateVoltageTable(voltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
-                        hdf5io.SaveVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
-                    elif(usetrace=='filteredvoltage'):
-                        filteredvoltage=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
-                        VoltageTable=hdf5io.CreateVoltageTable(filteredvoltage, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
-                        hdf5io.SaveFilteredVoltageTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),VoltageTable)
-
-
-                    #delete after iterate
-                    del points_I, points_II, points_III, points_IV
+                #delete after iterate
+                del points_I, points_II, points_III, points_IV
 
     #now aim at the point where all the antennas where interpolated and saved to file. Now i will calulate the peak to peak and hilbert envelope peak and time
     #this is done after everything was computed.
