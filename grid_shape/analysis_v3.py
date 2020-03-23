@@ -33,6 +33,8 @@ class Event:
             self.layout = "hexhex"
         elif "rect" in self.name:
             self.layout = "rect"
+        elif "trihex" in self.name:
+            self.layout = "trihex"
         else:
             self.layout = "unknown"
 
@@ -44,10 +46,12 @@ class Event:
 
 #path = "/Users/kotera/BROQUE/Data_GRAND/Matias/InterpolationOutputExample/"
 #path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibrary02/"
-path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibrary03/"
-path = "/Users/benoitl/Documents/GRAND/P2PDataNew/P2PdataNew/"
+#path = "/Users/kotera/BROQUE/Data_GRAND/Matias/P2PdataNew/"
+path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibaryHDF5-Grids/"
+#path = "/Users/benoitl/Documents/GRAND/P2PDataNew/P2PdataNew/"
 
-plot_path = '/Users/benoitl/Documents/GRAND/P2PDataNew/plots'
+plot_path = '/Users/kotera/BROQUE/Plots_GRAND/'
+#plot_path = '/Users/benoitl/Documents/GRAND/P2PDataNew/plots'
 os.makedirs(plot_path, exist_ok=True)
 
 
@@ -88,7 +92,7 @@ A_rect = [
     (ev.num_triggered, ev.energy, ev.step, ev.zenith, ev.is_triggered2) for  ev in ev_list
     if "voltage" in ev.name
     and ev.primary == "Proton"
-    and ev.layout == 'rect'
+    and ev.layout == 'trihex'
 ]
 A_hexhex = [
     (ev.num_triggered, ev.energy, ev.step, ev.zenith, ev.is_triggered2) for  ev in ev_list
@@ -125,9 +129,13 @@ for istep, step in enumerate(stepbins):
                 * (np.abs(A_rect[:,3]-(180-zen)) < 0.5) * (A_rect[:,0] > 0))
                 #* (A_rect[:,3] == 180-zen)* (A_rect[:,0] > 0))
                 #* (A_rect[:,3] >= zenbins[izen]) * (A_rect[:,3] < zenbins[izen+1]))
-
-            meanNtrig_zen.append(np.mean(A_rect[ind[0],0]))
-            varNtrig_zen.append(np.var(A_rect[ind[0],0]))
+            #print(ind)
+            if (len(ind[0]) == 0):
+                meanNtrig_zen.append(0)
+                varNtrig_zen.append(0)   
+            else:
+                meanNtrig_zen.append(np.mean(A_rect[ind[0],0]))
+                varNtrig_zen.append(np.var(A_rect[ind[0],0]))
 
         meanNtrig_step.append(meanNtrig_zen)
         varNtrig_step.append(varNtrig_zen)
@@ -176,7 +184,7 @@ for istep, step in enumerate(stepbins):
         plt.errorbar(
             enerbins,
             meanNtrig_ener[istep,:,izen],
-            yerr=sqrt(varNtrig_ener[istep,:,izen]), 
+            yerr=np.sqrt(varNtrig_ener[istep,:,izen]), 
             fmt=sym_list[izen],
             capsize=2,
             alpha=0.7,
@@ -187,7 +195,7 @@ for istep, step in enumerate(stepbins):
     plt.yscale('log')
     plt.ylabel('N triggered antennas')
     plt.xlabel('energy [EeV]')
-    plt.title('hex, step = %d m'%(np.int32(step)))
+    plt.title('trihex, step = %d m'%(np.int32(step)))
     plt.legend(loc=4)
     plt.show()
  
@@ -338,12 +346,13 @@ for izen in range(0, len(zenbins)-1):
             label='step = %d m'%(np.int32(step))
         )
     plt.yscale('log')
-    plt.ylabel('N triggered events over array per day')
+    plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
     plt.xlabel('energy [EeV]')
     plt.title('rect, %4.0f > zenith > %4.0f deg'%(zenbins[izen], zenbins[izen+1]))
     plt.legend(loc=4)
+    plt.ylim(1.e-1,1.e2)
     plt.show()
-##   plt.savefig(os.path.join(plot_path,'trigevrate_vs_energy_z%4.1f_rect_30muV.png'%(180-zenbins[izen+1])))
+    plt.savefig(os.path.join(plot_path,'evrate_vs_energy_z%4.1f_rect_30muV.png'%(180-zenbins[izen+1])))
 
 
 for iener, ener in enumerate(enerbins):
@@ -360,14 +369,14 @@ for iener, ener in enumerate(enerbins):
             label='step = %d m'%(np.int32(step))
         )
     plt.yscale('log')
-    plt.ylabel('N triggered events over array per day')
+    plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
     plt.xlabel('zenith [deg]')
     plt.title('Proton, rect, E = %4.3f EeV'%(ener))
     plt.legend(loc=4)
-    #plt.ylim(1.e-2,1.1)
+    plt.ylim(1.e-1,1.e2)
     plt.xlim(45,90)
     plt.show()
-    ##plt.savefig(os.path.join(plot_path, 'trigevrate_vs_zen_E%4.3f_rect_Proton_10N.png'%(ener)))
+    plt.savefig(os.path.join(plot_path, 'evrate_vs_zen_E%4.3f_rect_Proton.png'%(ener)))
 
 
 
