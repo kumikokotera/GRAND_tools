@@ -1,6 +1,13 @@
 import numpy as np
 import os
 
+'''
+Definition of class to read the simulation output files
+and of event selection routines 
+to perform simulation output analysis in the analysis.py routine
+'''
+
+
 class Event:
     def __init__(self,f1,f2, step, name):
         p2px, p2py, p2pz, p2ptot = np.loadtxt(f1)

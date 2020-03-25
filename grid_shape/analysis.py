@@ -4,7 +4,23 @@ import os
 import diff_spec
 import utils_analysis as ua
 
+'''
+analysis of simulation libraries to generate plots of triggered event rates
+for various layout shapes/steps
 
+First read all simulation files
+select layout shape, primary type, trigger threshold 
+store in an array to be dumped in file "events_data_dir/ev_select_*.npy"
+
+If this npy file is already present in the events_data_dir directory, the simulation output files are not re-read.
+
+Events are split in bins of energy, zenith angle, layout step size.
+The mean and variance of the triggered number of events is calculated for a given trigger threshold.
+The triggered event rate is calculated for a given setup and for given bins, 
+for a minimum number of triggered antennas Ntrig_thres
+
+Plots are saved in "plot_path" directory.
+'''
 
 # read files
 
@@ -21,7 +37,8 @@ events_data_dir = "/Users/benoitl/Documents/GRAND/event_data"
 os.makedirs(plot_path, exist_ok=True)
 os.makedirs(events_data_dir, exist_ok=True)
 
-threshold = 30
+threshold = 30 # trigger threshold for individual antennas in muV
+Ntrig_thres = 10 # number of triggered antennas required to trigger an event
 
 ev_select_rect_file = os.path.join(events_data_dir, 'ev_select_rect.npy')
 ev_select_hexhex_file = os.path.join(events_data_dir, 'ev_select_hexhex.npy')
@@ -42,7 +59,7 @@ if do_make_ev_list:
     for ev in ev_list:
         if "voltage" in ev.name:
             ev.num_triggered = sum(ev.is_triggered1(threshold))
-            ev.is_triggered2 = (ev.num_triggered > 10)
+            ev.is_triggered2 = (ev.num_triggered > Ntrig_thres)
 
 
     ev_select_rect = ua.make_ev_select(
