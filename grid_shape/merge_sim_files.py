@@ -4,6 +4,19 @@ import glob
 import numpy as np
 import argparse
 
+'''
+Merge simulation outputs to reduce number of files
+Usage:
+
+
+Parameters:
+
+
+Output:
+
+'''
+
+
 
 def parse_args():
     ap = argparse.ArgumentParser(description="aggregate simulation files")
