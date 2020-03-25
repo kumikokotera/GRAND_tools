@@ -7,13 +7,14 @@ import argparse
 '''
 Merge simulation outputs to reduce number of files
 Usage:
-
+    python3 merge_sim_files.py sim_path merge_config_file
 
 Parameters:
-
+    sim_path: path of the main folder containing the Stshp_XmaxLibrary_* directories
+    merge_config_file: .json parameter files describing primaries and layout geometry and step size
 
 Output:
-
+    a bunch of .json files of the form Primary_geom_step.json
 '''
 
 
