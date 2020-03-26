@@ -1,11 +1,15 @@
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 '''
 Definition of class to read the simulation output files
 and of event selection routines 
 to perform simulation output analysis in the analysis.py routine
 '''
+
+SYM_LIST = ['.','o','v','*','s','.','o','v','*','s','.','o','v','*','s']
+MYC = ['0','0.20','0.4','0.6','0.8']
 
 
 class Event:
@@ -54,7 +58,6 @@ def make_ev_list(path):
     for subdir in os.listdir(path):
         if os.path.isdir(os.path.join(path, subdir)):
             list_fn = os.listdir(os.path.join(path, subdir)) 
-            print(os.path.join(path, subdir))
             for fn in list_fn:
                 if fn[-6:] == "P2Pdat":
                     f1 = os.path.join(path, subdir, fn)
@@ -69,14 +72,11 @@ def make_ev_list(path):
     return ev_list
 
 
-
-
 def isnot_ev_select(ev_select_file):
     return not(os.path.isfile(ev_select_file))
 
 
 def make_ev_select(ev_list, layout, primary, ev_select_file):
-
     ev_select = [
         (
             ev.num_triggered,
@@ -133,6 +133,7 @@ def compute_meanNtrig(stepbins, enerbins, zenbins, ev_select):
 
 
 def compute_trig_rate(stepbins, enerbins, zenbins, ev_select):
+
     Ntrig2_ener = []
 
     for istep, step in enumerate(stepbins):
@@ -158,3 +159,195 @@ def compute_trig_rate(stepbins, enerbins, zenbins, ev_select):
 
     Ntrig2_ener = np.array(Ntrig2_ener)
     return Ntrig2_ener
+
+
+def plot_Ntrig_fixedsteps_vsenergy(
+    meanNtrig_ener,
+    varNtrig_ener,
+    stepbins,
+    enerbins,
+    zenbins
+):
+    """
+    plot Ntriggered antennas vs energies for fixed steps
+    """
+    for istep, step in enumerate(stepbins):
+        plt.figure(istep) 
+        plt.clf()
+        for izen in range(0, len(zenbins)-1):
+            plt.errorbar(
+                enerbins,
+                meanNtrig_ener[istep,:,izen],
+                yerr=np.sqrt(varNtrig_ener[istep,:,izen]), 
+                fmt=SYM_LIST[izen],
+                capsize=2,
+                alpha=0.7,
+                label='%4.0f > zen >%4.0f deg'%(180-zenbins[izen],180-zenbins[izen+1])
+            )
+            #plt.errorbar(enerbins, Ntrig2_ener[istep,:,izen], 
+            #    fmt=sym_list[izen], capsize=2)
+        plt.yscale('log')
+        plt.ylabel('N triggered antennas')
+        plt.xlabel('energy [EeV]')
+        plt.title('trihex, step = %d m'%(np.int32(step)))
+        plt.legend(loc=4)
+        plt.show()
+
+
+def plot_Ntrig_fixedzenith_vsenergy(
+    meanNtrig_ener,
+    varNtrig_ener,
+    stepbins,
+    enerbins,
+    zenbins
+):
+    """
+    plot Ntriggered antennas vs energies for fixed zenith angles
+    """
+    for izen in range(0, len(zenbins)-1):
+        plt.figure(izen+4) 
+        plt.clf()
+        for istep, step in enumerate(stepbins):
+            plt.errorbar(
+                enerbins,
+                meanNtrig_ener[istep,:,izen],
+                yerr=np.sqrt(varNtrig_ener[istep,:,izen]), 
+                fmt=SYM_LIST[istep],
+                capsize=2,
+                alpha=0.7,
+                label='step = %d m'%(np.int32(step)))
+            #plt.errorbar(enerbins, Ntrig2_ener[istep,:,izen],  
+            #   fmt=sym_list[istep], capsize=2, alpha=0.7)
+        plt.yscale('log')
+        plt.ylabel('N triggered antennas')
+        plt.xlabel('energy [EeV]')
+        plt.title('hex, %4.0f > zenith >%4.0f deg'%(180-zenbins[izen], 180-zenbins[izen+1]))
+        plt.legend(loc=4)
+        plt.show()
+
+
+def plot_Ntrig_fixedernergy_vszenith(
+    meanNtrig_ener,
+    varNtrig_ener,
+    stepbins,
+    enerbins,
+    zenbins,
+    plot_path='./'
+):
+    """
+    # plot Ntriggered antennas vs zenith angles for fixed energies 
+    """
+    for iener, ener in enumerate(enerbins):
+        plt.figure(iener) 
+        plt.clf()
+        for istep, step in enumerate(stepbins):
+            plt.errorbar(
+                zenbins,
+                meanNtrig_ener[istep,iener,:],
+                yerr=np.sqrt(varNtrig_ener[istep,iener,:]), 
+                fmt=SYM_LIST[istep],
+                capsize=2,
+                alpha=0.7,
+                label='step = %d m'%(np.int32(step))
+            )
+            #plt.errorbar(enerbins, Ntrig2_ener[istep,:,izen], 
+            #    fmt=sym_list[izen], capsize=2)
+        plt.yscale('log')
+        plt.ylabel('N triggered antennas')
+        plt.xlabel('zenith [deg]')
+        plt.title('Proton, rect, E = %4.3f EeV'%(ener))
+        plt.legend(loc=2)
+        plt.ylim(1,225)
+        plt.xlim(45,90)
+        plt.show()
+        plt.savefig(os.path.join(plot_path, 'Ntrig_vs_zen_E%4.3f_rect_Proton.png'%(ener)))
+
+
+def plot_rate_fixedsteps_vsenergy(
+    Ntrig2_ener,
+    stepbins,
+    enerbins,
+    zenbins,
+    plot_path='./'
+):
+    for istep, step in enumerate(stepbins):
+        plt.figure(istep) 
+        plt.clf()
+        for izen in range(0, len(zenbins)-1):
+            plt.errorbar(
+                enerbins,
+                Ntrig2_ener[istep,:,izen], 
+                fmt=SYM_LIST[izen],
+                ls='-',
+                capsize=2,
+                alpha=0.7,
+                label='%4.0f > zen >%4.0f deg'%(180-zenbins[izen], 180-zenbins[izen+1])
+            )
+        plt.yscale('log')
+        plt.ylabel('Triggered event rate')
+        plt.xlabel('energy [EeV]')
+        plt.title('hex, step = %d m'%(np.int32(step)))
+        plt.legend(loc=4)
+        plt.show()
+        plt.savefig(os.path.join(plot_path,'trigevrate_vs_energy_step%d_rect_30muV.png'%(np.int32(step))))
+
+
+def plot_rate_fixedzenith_vsenergy(
+    Ntrig2_ener,
+    stepbins,
+    enerbins,
+    zenbins,
+    plot_path="./"   
+):
+    for izen in range(0, len(zenbins)-1):
+        plt.figure(izen+4) 
+        plt.clf()
+        for istep, step in enumerate(stepbins):
+            plt.errorbar(
+                enerbins,
+                Ntrig2_ener[istep,:,izen],  
+                fmt=SYM_LIST[istep],
+                ls='-',
+                capsize=2,
+                alpha=0.7,
+                label='step = %d m'%(np.int32(step))
+            )
+        plt.yscale('log')
+        plt.ylabel('Triggered event rate')
+        plt.xlabel('energy [EeV]')
+        plt.title('hex, %4.0f > zenith >%4.0f deg'%(180-zenbins[izen], 180-zenbins[izen+1]))
+        plt.legend(loc=4)
+        plt.show()
+        plt.savefig(os.path.join(plot_path,'trigevrate_vs_energy_z%4.1f_rect_30muV.png'%(180-zenbins[izen+1])))
+
+
+def plot_rate_fixedenergy_vszenith(
+    Ntrig2_ener,
+    stepbins,
+    enerbins,
+    zenbins,
+    plot_path="./"  
+):
+# plot Ntriggered events vs zenith angles for fixed energies 
+    for iener, ener in enumerate(enerbins):
+        plt.figure(iener) 
+        plt.clf()
+        for istep, step in enumerate(stepbins):
+            plt.errorbar(
+                zenbins,
+                Ntrig2_ener[istep,iener,:],  
+                fmt=SYM_LIST[istep],
+                ls='-',
+                capsize=2,
+                alpha=0.7,
+                label='step = %d m'%(np.int32(step))
+            )
+        plt.yscale('log')
+        plt.ylabel('Triggered event rate')
+        plt.xlabel('zenith [deg]')
+        plt.title('Proton, rect, E = %4.3f EeV'%(ener))
+        plt.legend(loc=4)
+        plt.ylim(1.e-2,1.1)
+        plt.xlim(45,90)
+        plt.show()
+        plt.savefig(os.path.join(plot_path, 'trigevrate_vs_zen_E%4.3f_rect_Proton_10N.png'%(ener)))
