@@ -166,7 +166,8 @@ def plot_Ntrig_fixedsteps_vsenergy(
     varNtrig_ener,
     stepbins,
     enerbins,
-    zenbins
+    zenbins,
+    layout="rect"
 ):
     """
     plot Ntriggered antennas vs energies for fixed steps
@@ -189,9 +190,9 @@ def plot_Ntrig_fixedsteps_vsenergy(
         plt.yscale('log')
         plt.ylabel('N triggered antennas')
         plt.xlabel('energy [EeV]')
-        plt.title('trihex, step = %d m'%(np.int32(step)))
+        plt.title('%s, step = %d m'%(layout, np.int32(step)))
         plt.legend(loc=4)
-        plt.show()
+        #plt.show()
 
 
 def plot_Ntrig_fixedzenith_vsenergy(
@@ -199,7 +200,8 @@ def plot_Ntrig_fixedzenith_vsenergy(
     varNtrig_ener,
     stepbins,
     enerbins,
-    zenbins
+    zenbins,
+    layout="rect"
 ):
     """
     plot Ntriggered antennas vs energies for fixed zenith angles
@@ -221,9 +223,9 @@ def plot_Ntrig_fixedzenith_vsenergy(
         plt.yscale('log')
         plt.ylabel('N triggered antennas')
         plt.xlabel('energy [EeV]')
-        plt.title('hex, %4.0f > zenith >%4.0f deg'%(180-zenbins[izen], 180-zenbins[izen+1]))
+        plt.title('%s, %4.0f > zenith >%4.0f deg'%(layout, 180-zenbins[izen], 180-zenbins[izen+1]))
         plt.legend(loc=4)
-        plt.show()
+        #plt.show()
 
 
 def plot_Ntrig_fixedernergy_vszenith(
@@ -232,6 +234,7 @@ def plot_Ntrig_fixedernergy_vszenith(
     stepbins,
     enerbins,
     zenbins,
+    layout="rect",
     plot_path='./'
 ):
     """
@@ -255,12 +258,12 @@ def plot_Ntrig_fixedernergy_vszenith(
         plt.yscale('log')
         plt.ylabel('N triggered antennas')
         plt.xlabel('zenith [deg]')
-        plt.title('Proton, rect, E = %4.3f EeV'%(ener))
+        plt.title('Proton, %s, E = %4.3f EeV'%(layout, ener))
         plt.legend(loc=2)
         plt.ylim(1,225)
         plt.xlim(45,90)
-        plt.show()
-        plt.savefig(os.path.join(plot_path, 'Ntrig_vs_zen_E%4.3f_rect_Proton.png'%(ener)))
+        #plt.show()
+        plt.savefig(os.path.join(plot_path, 'Ntrig_vs_zen_E%4.3f_%s_Proton.png'%(ener, layout)))
 
 
 def plot_rate_fixedsteps_vsenergy(
@@ -268,6 +271,7 @@ def plot_rate_fixedsteps_vsenergy(
     stepbins,
     enerbins,
     zenbins,
+    layout="rect",
     plot_path='./'
 ):
     for istep, step in enumerate(stepbins):
@@ -286,10 +290,10 @@ def plot_rate_fixedsteps_vsenergy(
         plt.yscale('log')
         plt.ylabel('Triggered event rate')
         plt.xlabel('energy [EeV]')
-        plt.title('hex, step = %d m'%(np.int32(step)))
+        plt.title('%s, step = %d m'%(layout, np.int32(step)))
         plt.legend(loc=4)
-        plt.show()
-        plt.savefig(os.path.join(plot_path,'trigevrate_vs_energy_step%d_rect_30muV.png'%(np.int32(step))))
+        #plt.show()
+        plt.savefig(os.path.join(plot_path,'trigevrate_vs_energy_step%d_%s_30muV.png'%(np.int32(step), layout)))
 
 
 def plot_rate_fixedzenith_vsenergy(
@@ -297,6 +301,7 @@ def plot_rate_fixedzenith_vsenergy(
     stepbins,
     enerbins,
     zenbins,
+    layout="rect",
     plot_path="./"   
 ):
     for izen in range(0, len(zenbins)-1):
@@ -315,10 +320,10 @@ def plot_rate_fixedzenith_vsenergy(
         plt.yscale('log')
         plt.ylabel('Triggered event rate')
         plt.xlabel('energy [EeV]')
-        plt.title('hex, %4.0f > zenith >%4.0f deg'%(180-zenbins[izen], 180-zenbins[izen+1]))
+        plt.title('%s, %4.0f > zenith >%4.0f deg'%(layout, 180-zenbins[izen], 180-zenbins[izen+1]))
         plt.legend(loc=4)
-        plt.show()
-        plt.savefig(os.path.join(plot_path,'trigevrate_vs_energy_z%4.1f_rect_30muV.png'%(180-zenbins[izen+1])))
+        #plt.show()
+        plt.savefig(os.path.join(plot_path,'trigevrate_vs_energy_z%4.1f_%s_30muV.png'%(180-zenbins[izen+1], layout)))
 
 
 def plot_rate_fixedenergy_vszenith(
@@ -326,6 +331,7 @@ def plot_rate_fixedenergy_vszenith(
     stepbins,
     enerbins,
     zenbins,
+    layout="rect",
     plot_path="./"  
 ):
 # plot Ntriggered events vs zenith angles for fixed energies 
@@ -345,9 +351,9 @@ def plot_rate_fixedenergy_vszenith(
         plt.yscale('log')
         plt.ylabel('Triggered event rate')
         plt.xlabel('zenith [deg]')
-        plt.title('Proton, rect, E = %4.3f EeV'%(ener))
+        plt.title('Proton, %s, E = %4.3f EeV'%(layout, ener))
         plt.legend(loc=4)
         plt.ylim(1.e-2,1.1)
         plt.xlim(45,90)
-        plt.show()
-        plt.savefig(os.path.join(plot_path, 'trigevrate_vs_zen_E%4.3f_rect_Proton_10N.png'%(ener)))
+        #plt.show()
+        plt.savefig(os.path.join(plot_path, 'trigevrate_vs_zen_E%4.3f_%s_Proton_10N.png'%(ener, layout)))

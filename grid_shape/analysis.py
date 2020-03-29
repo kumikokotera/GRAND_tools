@@ -90,13 +90,19 @@ else:
 
 
 
+ev_select = ev_select_trihex
+layout = "trihex"
+
+
+
+
 # calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
-enerbins = np.unique(ev_select_rect[:,1])
+enerbins = np.unique(ev_select[:,1])
 #zenbins = 180-np.unique(A_rect[:,3])
 zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47, 113.58,120,132])
 zenbins = 180. - zenbins
 #zenbins = [94,100,105,110,120,131]
-stepbins = np.unique(ev_select_rect[:,2])
+stepbins = np.unique(ev_select[:,2])
 
 
 
@@ -104,7 +110,7 @@ meanNtrig_ener, varNtrig_ener = ua.compute_meanNtrig(
     stepbins,
     enerbins,
     zenbins,
-    ev_select_rect
+    ev_select
 )
 
 
@@ -116,7 +122,7 @@ Ntrig2_ener = ua.compute_trig_rate(
     stepbins,
     enerbins,
     zenbins,
-    ev_select_rect
+    ev_select
 )
 
 
@@ -141,6 +147,7 @@ if do_plot_Ntrig_fixedsteps_vsenergy:
     stepbins,
     enerbins,
     zenbins,
+    layout
 )
 
 # plot Ntriggered antennas vs energies for fixed zenith angles
@@ -150,7 +157,8 @@ if do_plot_Ntrig_fixedzenith_vsenergy:
     varNtrig_ener,
     stepbins,
     enerbins,
-    zenbins
+    zenbins,
+    layout
 )
 
 
@@ -161,9 +169,9 @@ if do_plot_Ntrig_fixedernergy_vszenith:
     stepbins,
     enerbins,
     zenbins,
+    layout,
     plot_path=plot_path
 )
-
 
 
 if do_plot_rate_fixedsteps_vsenergy:
@@ -173,6 +181,7 @@ if do_plot_rate_fixedsteps_vsenergy:
     stepbins,
     enerbins,
     zenbins,
+    layout,
     plot_path=plot_path
 )
 
@@ -182,6 +191,7 @@ if do_plot_rate_fixedzenith_vsenergy:
     stepbins,
     enerbins,
     zenbins,
+    layout,
     plot_path=plot_path    
 )
 
@@ -192,20 +202,36 @@ if do_plot_rate_fixedenergy_vszenith:
     stepbins,
     enerbins,
     zenbins,
+    layout,
     plot_path=plot_path    
 )
 
 
 
-delta_E = enerbins[1:] - enerbins[:-1]
-delta_E = np.insert(delta_E, 0, delta_E[0])
+# trigger rate calculation over full array
+# convolving with measured CR flux
 
-delta_omega = - (zenbins[1:] - zenbins[:-1])
+log_E_eV = np.log10(enerbins*1.e18) -0.05
+log_E_eV = np.append(log_E_eV, log_E_eV[-1]+0.05)
+enerbins2 = 10**(log_E_eV) / 1e18 # in EeV
+delta_E = enerbins2[1:] - enerbins2[:-1]
 
-delta_omega = np.insert(delta_omega, 0, delta_omega[0]) 
-delta_omega = 2*np.pi * delta_omega *np.pi/180 * np.sin(np.pi/2 - zenbins*np.pi/180)
 
-area = stepbins**2 * 200
+cen = 1.0/np.cos(zenbins*np.pi/180)
+cenl = cen + 0.25
+cenr = cen - 0.25
+
+thetal = np.arccos(1.0/cenl) * 180/np.pi
+thetar = np.arccos(1.0/cenr) * 180/np.pi
+
+
+# delta_omega = - (zenbins[1:] - zenbins[:-1])
+# delta_omega = np.insert(delta_omega, 0, delta_omega[0])
+
+delta_theta = thetal - thetar
+delta_omega = 2*np.pi * delta_theta *np.pi/180 * np.sin(np.pi/2 - zenbins*np.pi/180)
+
+area = stepbins**2 * 200 
 
 rate = Ntrig2_ener.copy() * 0
 for iener, ener in enumerate(enerbins):
@@ -215,7 +241,7 @@ for iener, ener in enumerate(enerbins):
                 Ntrig2_ener[istep,iener,izen] * 
                 diff_spec.tale_diff_flux(ener*1e18) * 
                 delta_E[iener] *1e18 * delta_omega[izen] *
-                area[istep]
+                area[istep] * np.cos(zen*np.pi/180)
             )
 
 
@@ -237,11 +263,11 @@ for izen in range(0, len(zenbins)-1):
     plt.yscale('log')
     plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
     plt.xlabel('energy [EeV]')
-    plt.title('rect, %4.0f > zenith > %4.0f deg'%(zenbins[izen], zenbins[izen+1]))
+    plt.title('%s, %4.0f > zenith > %4.0f deg'%(layout, zenbins[izen], zenbins[izen+1]))
     plt.legend(loc=4)
     plt.ylim(1.e-1,1.e2)
-    plt.show()
-    plt.savefig(os.path.join(plot_path,'evrate_vs_energy_z%4.1f_rect_30muV.png'%(180-zenbins[izen+1])))
+    #plt.show()
+    plt.savefig(os.path.join(plot_path,'evrate_vs_energy_z%4.1f_%s_30muV.png'%(180-zenbins[izen+1], layout)))
 
 
 for iener, ener in enumerate(enerbins):
@@ -260,12 +286,12 @@ for iener, ener in enumerate(enerbins):
     plt.yscale('log')
     plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
     plt.xlabel('zenith [deg]')
-    plt.title('Proton, rect, E = %4.3f EeV'%(ener))
+    plt.title('Proton, %s, E = %4.3f EeV'%(layout, ener))
     plt.legend(loc=4)
     plt.ylim(1.e-1,1.e2)
     plt.xlim(45,90)
-    plt.show()
-    plt.savefig(os.path.join(plot_path, 'evrate_vs_zen_E%4.3f_rect_Proton.png'%(ener)))
+    #plt.show()
+    plt.savefig(os.path.join(plot_path, 'evrate_vs_zen_E%4.3f_%s_Proton.png'%(ener, layout)))
 
 
 
