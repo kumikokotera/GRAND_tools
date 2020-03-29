@@ -487,6 +487,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     #write the output file headers
     hdf5io.SaveRunInfo(OutputFilename,CurrentRunInfo)
     hdf5io.SaveEventInfo(OutputFilename,CurrentEventInfo,CurrentEventName)
+
     #making the table of desired antennas for the file
     DesiredAntennaInfoMeta=hdf5io.CreatAntennaInfoMeta(split(InputFilename)[1],CurrentEventName,AntennaModel="Interpolated")
     DesiredIds=np.arange(0, len(positions_des)) #this could be taken from the input file of desired antennas
@@ -496,6 +497,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     DesiredSlopeA=np.zeros(len(positions_des))
     DesiredSlopeB=np.zeros(len(positions_des))
     DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta)
+
     hdf5io.SaveAntennaInfo(OutputFilename,DesiredAntennaInfo,CurrentEventName,overwrite=True)
 
     #not using them, but i could put SignalSim And ShowerSim Info
@@ -1061,6 +1063,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 #        print("%3.2f %1.5e %1.5e %1.5e" % (xnew_desiredx[j], tracedes_desiredx[j], tracedes_desiredy[j], tracedes_desiredz[j]), end='\n', file=FILE)
                 #FILE.close()
 
+
                 if(usetrace=='efield'):
                     efield=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     EfieldTable=hdf5io.CreateEfieldTable(efield, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
@@ -1077,6 +1080,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
 
                 #delete after iterate
                 del points_I, points_II, points_III, points_IV
+
 
     #now aim at the point where all the antennas where interpolated and saved to file. Now i will calulate the peak to peak and hilbert envelope peak and time
 
