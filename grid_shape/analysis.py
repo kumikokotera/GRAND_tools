@@ -91,11 +91,8 @@ else:
 
 
 
-ev_select = ev_select_trihex
-layout = "trihex"
-
-
-
+ev_select = ev_select_hexhex
+layout = "hexhex"
 
 # calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
 enerbins = np.unique(ev_select[:,1])
@@ -104,8 +101,6 @@ zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47,
 zenbins = 180. - zenbins
 #zenbins = [94,100,105,110,120,131]
 stepbins = np.unique(ev_select[:,2])
-
-
 
 meanNtrig_ener, varNtrig_ener = ua.compute_meanNtrig(
     stepbins,
@@ -301,8 +296,174 @@ for iener, ener in enumerate(enerbins):
 
 
 
+zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47, 113.58,120,132])
+zenbins = 180. - zenbins
+enerbins = np.unique(ev_select[:,1])
+
+ev_select = ev_select_rect
+
+# calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
+stepbins = np.unique(ev_select[:,2])
+
+meanNtrig_ener, varNtrig_ener = ua.compute_meanNtrig(
+    stepbins,
+    enerbins,
+    zenbins,
+    ev_select
+)
+
+# calculate mean and variance of triggered event numbers in each zenith angle and energy bins 
+
+Ntrig2_ener_rect = ua.compute_trig_rate(
+    stepbins,
+    enerbins,
+    zenbins,
+    ev_select
+)
+
+ev_select = ev_select_hexhex
+
+# calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
+stepbins = np.unique(ev_select[:,2])
+stepbins_hexhex = stepbins
+
+meanNtrig_ener, varNtrig_ener = ua.compute_meanNtrig(
+    stepbins,
+    enerbins,
+    zenbins,
+    ev_select
+)
+
+# calculate mean and variance of triggered event numbers in each zenith angle and energy bins 
+
+Ntrig2_ener_hexhex = ua.compute_trig_rate(
+    stepbins,
+    enerbins,
+    zenbins,
+    ev_select
+)
+
+ev_select = ev_select_trihex
+
+# calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
+stepbins = np.unique(ev_select[:,2])
+stepbins_trihex = stepbins
+
+meanNtrig_ener, varNtrig_ener = ua.compute_meanNtrig(
+    stepbins,
+    enerbins,
+    zenbins,
+    ev_select
+)
+
+# calculate mean and variance of triggered event numbers in each zenith angle and energy bins 
+
+Ntrig2_ener_trihex = ua.compute_trig_rate(
+    stepbins,
+    enerbins,
+    zenbins,
+    ev_select
+)
 
 
+# trigger rate calculation over full array
+# convolving with measured CR flux
+
+log_E_eV = np.log10(enerbins*1.e18) -0.05
+log_E_eV = np.append(log_E_eV, log_E_eV[-1]+0.05)
+enerbins2 = 10**(log_E_eV) / 1e18 # in EeV
+delta_E = enerbins2[1:] - enerbins2[:-1]
+
+
+cen = 1.0/np.cos(zenbins*np.pi/180)
+cenl = cen + 0.25
+cenr = cen - 0.25
+
+thetal = np.arccos(1.0/cenl) * 180/np.pi
+thetar = np.arccos(1.0/cenr) * 180/np.pi
+
+
+# delta_omega = - (zenbins[1:] - zenbins[:-1])
+# delta_omega = np.insert(delta_omega, 0, delta_omega[0])
+
+delta_theta = thetal - thetar
+delta_omega = 2*np.pi * delta_theta *np.pi/180 * np.sin(np.pi/2 - zenbins*np.pi/180)
+
+area = stepbins**2 * 225 
+area_hexhex = stepbins_hexhex**2 *3*np.sqrt(3)/2 * 216
+area_trihex = stepbins_trihex**2 *np.sqrt(3)/4 * 211
+
+rate_rect = Ntrig2_ener_rect.copy() * 0
+rate_hexhex = Ntrig2_ener_hexhex.copy() * 0
+rate_trihex = Ntrig2_ener_trihex.copy() * 0
+
+for iener, ener in enumerate(enerbins):
+    for istep, step in enumerate(stepbins):
+        for izen, zen in enumerate(zenbins):
+            rate_rect[istep, iener, izen] = (
+                Ntrig2_ener_rect[istep,iener,izen] * 
+                diff_spec.tale_diff_flux(ener*1e18) * 
+                delta_E[iener] *1e18 * delta_omega[izen] *
+                area[istep] * np.cos(zen*np.pi/180)
+            )
+            rate_hexhex[istep, iener, izen] = (
+                Ntrig2_ener_hexhex[istep,iener,izen] * 
+                diff_spec.tale_diff_flux(ener*1e18) * 
+                delta_E[iener] *1e18 * delta_omega[izen] *
+                area_hexhex[istep] * np.cos(zen*np.pi/180)
+            )
+            rate_trihex[istep, iener, izen] = (
+                Ntrig2_ener_trihex[istep,iener,izen] * 
+                diff_spec.tale_diff_flux(ener*1e18) * 
+                delta_E[iener] *1e18 * delta_omega[izen] *
+                area_trihex[istep] * np.cos(zen*np.pi/180)
+            )
+
+
+
+
+for izen in range(0, len(zenbins)-1):
+    plt.figure(izen) 
+    plt.clf()
+    for istep, step in enumerate(stepbins):
+        plt.errorbar(
+            enerbins,
+            rate_rect[istep,:,izen] * 24*3600,
+            fmt="C%d"%istep+'s', 
+            ms=7,
+            ls='-',
+            capsize=2,
+            alpha=0.7,
+            label='step = %d m'%(np.int32(step))
+        )
+        plt.errorbar(
+            enerbins,
+            rate_hexhex[istep,:,izen] * 24*3600,
+            fmt="C%d"%istep+'h',
+            ms=10,           
+            ls='-',
+            capsize=2,
+            alpha=0.7,
+            #label='step = %d m'%(np.int32(step))
+        )
+        plt.errorbar(
+            enerbins,
+            rate_trihex[istep,:,izen] * 24*3600,
+            fmt="C%d"%istep+'^',
+            ms=7,
+            ls='-',
+            capsize=2,
+            alpha=0.7,
+            #label='step = %d m'%(np.int32(step))
+        )
+    plt.yscale('log')
+    plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
+    plt.xlabel('energy [EeV]')
+    plt.title('%4.0f > zenith > %4.0f deg'%(zenbins[izen], zenbins[izen+1]))
+    plt.legend(loc=1)
+    plt.ylim(1.e-1,1.e2)
+    #plt.show()
+    plt.savefig(os.path.join(plot_path,'evrate_vs_energy_z%4.1f_all_30muV.png'%(180-zenbins[izen+1])))
 
 
 

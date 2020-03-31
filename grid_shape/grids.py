@@ -141,8 +141,8 @@ def create_grid_univ(
             FILE.close()
 
     if GridShape == 'trihex':
-        # create a hexagonal grid with overall hexagonal layout
-        logging.debug('create_grid:Generating hexagonal grid in hex layout...')
+        # create a triangular grid with overall hexagonal layout: use a hexagonal grid and add the central point in each cell
+        logging.debug('create_grid:Generating triangular grid in overall hexagonal layout...')
 
         Nring = 4 # number of hex rings corresponding to 211 antennas
         radius_grid = (1 + Nring *1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
