@@ -27,12 +27,13 @@ Plots are saved in "plot_path" directory.
 #path = "/Users/kotera/BROQUE/Data_GRAND/Matias/InterpolationOutputExample/"
 #path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibrary02/"
 #path = "/Users/kotera/BROQUE/Data_GRAND/Matias/P2PdataNew/"
-#path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibaryHDF5-Grids/"
-path = "/Users/benoitl/Documents/GRAND/StshpLibaryHDF5-Grids/"
+path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibrary-HDF5-Grids/"
+#path = "/Users/benoitl/Documents/GRAND/StshpLibaryHDF5-Grids/"
 
-#plot_path = '/Users/kotera/BROQUE/Plots_GRAND/'
-plot_path = '/Users/benoitl/Documents/GRAND/plots_tests'
-events_data_dir = "/Users/benoitl/Documents/GRAND/event_data"
+plot_path = '/Users/kotera/BROQUE/Plots_GRAND/'
+#plot_path = '/Users/benoitl/Documents/GRAND/plots_tests'
+events_data_dir = "/Users/kotera/BROQUE/Data_GRAND/Matias/event_data"
+#events_data_dir = "/Users/benoitl/Documents/GRAND/event_data"
 
 os.makedirs(plot_path, exist_ok=True)
 os.makedirs(events_data_dir, exist_ok=True)
@@ -132,12 +133,12 @@ myc = ['0','0.20','0.4','0.6','0.8']
 
 
 
-do_plot_rate_fixedenergy_vszenith = True
-do_plot_rate_fixedzenith_vsenergy = True
-do_plot_rate_fixedsteps_vsenergy = True
-do_plot_Ntrig_fixedernergy_vszenith = True
-do_plot_Ntrig_fixedzenith_vsenergy = True
-do_plot_Ntrig_fixedsteps_vsenergy = True
+do_plot_rate_fixedenergy_vszenith = False
+do_plot_rate_fixedzenith_vsenergy = False
+do_plot_rate_fixedsteps_vsenergy = False
+do_plot_Ntrig_fixedernergy_vszenith = False
+do_plot_Ntrig_fixedzenith_vsenergy = False
+do_plot_Ntrig_fixedsteps_vsenergy = False
 
 if do_plot_Ntrig_fixedsteps_vsenergy:
 # plot Ntriggered antennas vs energies for fixed steps
@@ -264,7 +265,7 @@ for izen in range(0, len(zenbins)-1):
     plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
     plt.xlabel('energy [EeV]')
     plt.title('%s, %4.0f > zenith > %4.0f deg'%(layout, zenbins[izen], zenbins[izen+1]))
-    plt.legend(loc=4)
+    plt.legend(loc=1)
     plt.ylim(1.e-1,1.e2)
     #plt.show()
     plt.savefig(os.path.join(plot_path,'evrate_vs_energy_z%4.1f_%s_30muV.png'%(180-zenbins[izen+1], layout)))
@@ -287,7 +288,7 @@ for iener, ener in enumerate(enerbins):
     plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
     plt.xlabel('zenith [deg]')
     plt.title('Proton, %s, E = %4.3f EeV'%(layout, ener))
-    plt.legend(loc=4)
+    plt.legend(loc=1)
     plt.ylim(1.e-1,1.e2)
     plt.xlim(45,90)
     #plt.show()
