@@ -356,4 +356,4 @@ def plot_rate_fixedenergy_vszenith(
         plt.ylim(1.e-2,1.1)
         plt.xlim(45,90)
         #plt.show()
-        plt.savefig(os.path.join(plot_path, 'trigevrate_vs_zen_E%4.3f_%s_Proton_10N.png'%(ener, layout)))
+        plt.savefig(os.path.join(plot_path, 'trigevrate_vs_zen_E%4.3f_%s_Proton.png'%(ener, layout)))

@@ -2,7 +2,7 @@ import hexy as hx
 import numpy as np
 import matplotlib.pyplot as plt
 
-Nring = 5 # number of hex rings corresponding to 186 antennas
+Nring = 4 # number of hex rings corresponding to 5--> 216 antennas and 91 cells, 4-->186 antennas and 61 cells
 radius = 1000 #stepx
 xcube = hx.get_spiral(np.array((0,0,0)), 0,Nring)
 xpix = hx.cube_to_pixel(xcube, radius)
