@@ -32,6 +32,11 @@ def parse_args():
         type=str,
         help="layoutvconfig file ",
     )
+    ap.add_argument(
+        "output_path",
+        type=str,
+        help="output folder",
+    )   
     args = ap.parse_args()
     return args
 
@@ -55,7 +60,7 @@ def make_combined_layout(layouts):
     return combined_layout_list
 
 
-def merge_sims(path, primary_list, combined_layout_list):
+def merge_sims(path, output_path, primary_list, combined_layout_list):
 
     for primary in primary_list:
         for cl in combined_layout_list:
@@ -103,11 +108,14 @@ def merge_sims(path, primary_list, combined_layout_list):
                     d["vo"] = np.loadtxt(vo).tolist()
 
                 globals()["%s_%s"%(primary, cl["id"])][bn] = d    
-        
-            with open("./%s.json"%("%s_%s"%(primary, cl["name"])), "w") as f:
+
+            output_file = os.path.join(
+                output_path,
+                "%s.json"%("%s_%s"%(primary, cl["name"]))
+            )
+            with open(output_file, "w") as f:
                 json.dump(globals()["%s_%s"%(primary, cl["id"])], f, indent=4)       
         
-
 
 if __name__ == "__main__":
 
@@ -117,6 +125,12 @@ if __name__ == "__main__":
         config = json.load(f)
  
     combined_layout_list = make_combined_layout(config["layouts"])
-   
-    merge_sims(args.sim_path, config["primaries"], combined_layout_list)
+    
+    os.makedirs(args.output_path, exist_ok=True)
+    merge_sims(
+        args.sim_path,
+        args.output_path,
+        config["primaries"],
+        combined_layout_list
+    )
 
