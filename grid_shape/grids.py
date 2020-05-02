@@ -53,6 +53,7 @@ def get_hexarray(n_ring, radius, do_mask=False):
     else:
         return hexarray   
 
+
 def create_grid_univ(
     GridShape,
     radius,
@@ -248,6 +249,7 @@ def create_grid_univ(
     else:
         return new_pos, offset
 
+
 def get_offset(radius, GridShape):
     '''
     Draw random offset in the central cell 
@@ -431,4 +433,3 @@ def create_grid(positions, phi, GridShape, xNum, yNum):
 
 
     return new_pos
-

@@ -17,7 +17,7 @@ If this npy file is already present in the events_data_dir directory, the simula
 Events are split in bins of energy, zenith angle, layout step size.
 The mean and variance of the triggered number of events is calculated for a given trigger threshold.
 The triggered event rate is calculated for a given setup and for given bins, 
-for a minimum number of triggered antennas Ntrig_thres
+for a minimum number of triggered antennas n_trig_thres
 
 Plots are saved in "plot_path" directory.
 '''
@@ -39,7 +39,27 @@ os.makedirs(plot_path, exist_ok=True)
 os.makedirs(events_data_dir, exist_ok=True)
 
 threshold = 30 # trigger threshold for individual antennas in muV
-Ntrig_thres = 10 # number of triggered antennas required to trigger an event
+n_trig_thres = 5 # number of triggered antennas required to trigger an event
+
+
+
+# def get_ev_select(
+#     events_data_dir,
+#     grid_shape,
+#     primary,
+#     threshold,
+#     n_trig_thres,
+#     prune_layout=''
+# ):
+    
+#     ev_select_name = 'ev_select_%s_%s_%2.4f_%d_%s.npy'
+#     ev_select_file = os.path.join(events_data_dir, ev_select_name)
+
+
+
+
+
+
 
 ev_select_rect_file = os.path.join(events_data_dir, 'ev_select_rect_proton.npy')
 ev_select_hexhex_file = os.path.join(events_data_dir, 'ev_select_hexhex_proton.npy')
@@ -61,7 +81,7 @@ if do_make_ev_list:
     for ev in ev_list:
         if "voltage" in ev.name:
             ev.num_triggered = sum(ev.is_triggered1(threshold))
-            ev.is_triggered2 = (ev.num_triggered > Ntrig_thres)
+            ev.is_triggered2 = (ev.num_triggered > n_trig_thres)
 
 
     ev_select_rect = ua.make_ev_select(
