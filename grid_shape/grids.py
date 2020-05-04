@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import numpy as np
-from numpy import *
 import astropy.units as u
 import logging
 import os
@@ -49,9 +48,9 @@ def get_hexarray(n_ring, radius, do_mask=False):
 
         hexarray = np.vstack([hexarray, xpix])
         mask = np.vstack([mask_corner, mask_pix])
-        return hexarray, mask
+        return hexarray, radius_grid,  mask
     else:
-        return hexarray   
+        return hexarray, radius_grid   
 
 
 def create_grid_univ(
@@ -63,7 +62,8 @@ def create_grid_univ(
     randeff=None,
     DISPLAY=False,
     directory=None,
-    do_trim=False
+    do_prune=False, 
+    input_n_ring = None
 ):
     '''
     generate new positions of antennas with universal layout
@@ -92,14 +92,14 @@ def create_grid_univ(
         centered on 0 and of sigma radius/randeff
     directory: str
         path of root directory of shower library
-    do_trim: create a mask of the centers of the hexagons in the trihex case
+    do_prune: create a mask of the centers of the hexagons in the trihex case
     Output:
     new_pos: numpy arrays
         x, y, z coordinates of antenna in new layout
     offset: list
         x,y coordinates of the grid offset
     mask: bool array
-        if do_trim==True and trihex case
+        if do_prune==True and trihex case
 
 
     '''
@@ -137,10 +137,12 @@ def create_grid_univ(
     if GridShape == 'hexhex':
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout...')
+        if input_n_ring:  
+            n_ring = input_n_ring
+        else:
+            n_ring = 5  # number of hex rings corresponding to 216/150 antennas (n_ring=5/4)
         
-        n_ring = 5  # number of hex rings corresponding to 216/186 antennas (n_ring=5/4)
-        
-        hexarray = get_hexarray(n_ring, radius)
+        hexarray, radius_grid = get_hexarray(n_ring, radius)
 
         grid_x = hexarray[:,0]
         grid_y = hexarray[:,1]
@@ -151,9 +153,11 @@ def create_grid_univ(
     if GridShape == 'trihex':
         # create a triangular grid with overall hexagonal layout: use a hexagonal grid and add the central point in each cell
         logging.debug('create_grid:Generating triangular grid in overall hexagonal layout...')
-
-        n_ring = 4 # number of hex rings corresponding to 211 antennas (n_ring=4)
-        hexarray, mask = get_hexarray(n_ring, radius, do_mask=True)
+        if input_n_ring:  
+            n_ring = input_n_ring
+        else:
+            n_ring = 4 # number of hex rings corresponding to 211 antennas (n_ring=4)
+        hexarray, radius_grid,  mask = get_hexarray(n_ring, radius, do_mask=True)
 
         grid_x = hexarray[:,0]
         grid_y = hexarray[:,1]
@@ -165,9 +169,12 @@ def create_grid_univ(
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout with random displacements...')
 
-        n_ring = 4 # number of hex rings corresponding to 216/186 antennas (n_ring=5/4)
+        if input_n_ring:  
+            n_ring = input_n_ring
+        else:
+            n_ring = 4 # number of hex rings corresponding to 216/150 antennas (n_ring=5/4)
 
-        hexarray = get_hexarray(n_ring, radius)
+        hexarray, radius_grid = get_hexarray(n_ring, radius)
 
         grid_x = hexarray[:,0]
         grid_y = hexarray[:,1]
@@ -244,7 +251,7 @@ def create_grid_univ(
         axs.axis('equal')
         plt.show()
     
-    if do_trim and GridShape=='trihex':
+    if do_prune and GridShape=='trihex':
         return new_pos, offset, mask
     else:
         return new_pos, offset
