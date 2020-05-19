@@ -1,6 +1,3 @@
-
-
-
 import numpy as np
 import grids as grids
 import matplotlib.pyplot as plt
