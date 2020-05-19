@@ -42,25 +42,6 @@ threshold = 30 # trigger threshold for individual antennas in muV
 n_trig_thres = 5 # number of triggered antennas required to trigger an event
 
 
-
-# def get_ev_select(
-#     events_data_dir,
-#     grid_shape,
-#     primary,
-#     threshold,
-#     n_trig_thres,
-#     prune_layout=''
-# ):
-    
-#     ev_select_name = 'ev_select_%s_%s_%2.4f_%d_%s.npy'
-#     ev_select_file = os.path.join(events_data_dir, ev_select_name)
-
-
-
-
-
-
-
 ev_select_rect_file = os.path.join(events_data_dir, 'ev_select_rect_proton.npy')
 ev_select_hexhex_file = os.path.join(events_data_dir, 'ev_select_hexhex_proton.npy')
 ev_select_trihex_file = os.path.join(events_data_dir, 'ev_select_trihex_proton.npy')
@@ -326,7 +307,7 @@ if do_plot_overall_rate_fixedenergy_vszenith:
 # convolved with the measured cosmic-ray flux
 # plot all 3 geometrical layouts in one single plot
 
-zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47, 113.58,120,132])
+zenbins = np.array([94.77, 95.74, 97.18, 98.21, 99.59, 101.54, 104.48, 106.6, 109.47, 113.58, 120, 132])
 zenbins = 180. - zenbins
 enerbins = np.unique(ev_select[:,1])
 
@@ -449,7 +430,6 @@ for iener, ener in enumerate(enerbins):
                 delta_E[iener] *1e18 * delta_omega[izen] *
                 area_trihex[istep] * np.cos(zen*np.pi/180) /area_trihex[istep] # !! finally we divide by the area here
             )
-
 
 
 if do_plot_overall_rate_fixedzenith_vsenergy_allgeom:
@@ -675,8 +655,6 @@ if do_plot_overall_rate_fixedzenith_vsenergy_allprim:
         plt.ylim(1.e-10,1.e-4)
         #plt.show()
         plt.savefig(os.path.join(plot_path,'evrate_vs_energy_z%4.1f_allprim_30muV.png'%(180-zenbins[izen+1])))
-
-
 
 
 # geometrical factor
