@@ -11,7 +11,7 @@ from matplotlib.pyplot import cm
 
 import hexy as hx
 
-Z_SITE = 2900 # height of GP300 site in km
+Z_SITE = 1086 # height of GP300 site in km
 
 def create_grid(positions, phi, GridShape, xNum, yNum):
     '''
@@ -45,7 +45,7 @@ def create_grid(positions, phi, GridShape, xNum, yNum):
     y_pos = positions[1,:]
     z_pos = positions[2,:]
 
-    z_site = 2900. # height of GP300 site in km
+    z_site = Z_SITE # height of GP300 site in km
     icheck = np.mgrid[160:176:1]
 
     # geometrical parameters for grid
@@ -66,6 +66,7 @@ def create_grid(positions, phi, GridShape, xNum, yNum):
        logging.debug('create_grid: Interpolation check...')
        x_pos_new = x_pos[icheck]
        y_pos_new = y_pos[icheck]
+       z_pos_new = z_pos[icheck]
 
     if GridShape == 'rect':
         # create rectangular grid
@@ -145,7 +146,8 @@ def create_grid(positions, phi, GridShape, xNum, yNum):
 
 
     # for now set position of z to site altitude
-    z_pos_new = x_pos_new*0 + z_site
+    if GridShape != 'check' :
+     z_pos_new = x_pos_new*0 + z_site
 
     # create new position array
     new_pos = np.stack((x_pos_new,y_pos_new,z_pos_new), axis=0)

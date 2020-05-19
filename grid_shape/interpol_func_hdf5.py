@@ -50,7 +50,7 @@ def get_antenna_pos_zhaires(pathfile):
     return number_ant, positions, ID_ant
 
 
-def interpol_check_hdf5(InputFilename, positions, new_pos, p2pE, InterpolMethod, threshold=0,usetrace='efield', DISPLAY=False):
+def interpol_check_hdf5(InputFilename, positions, new_pos, p2pE, InterpolMethod,usetrace='efield', DISPLAY=False):
     '''
     Interpolates the signal peak-to-peak electric field at new antenna positions
     Check that the interpolation efficiency at 6 antenna positions available in each shower file
@@ -64,9 +64,6 @@ def interpol_check_hdf5(InputFilename, positions, new_pos, p2pE, InterpolMethod,
         x, y, z coordinates of the antennas in new layout (at 6 check points)
     p2pE: numpy array
         [p2p_Ex, p2p_Ey, p2p_Ez, p2p_total]: peak-to-peak electric fields along x, y, z, and norm
-
-    threshold: float
-        threshold abouve wich the interpolation is computed
 
     InterpolMethod: str
         interpolation method
@@ -120,7 +117,7 @@ def interpol_check_hdf5(InputFilename, positions, new_pos, p2pE, InterpolMethod,
         OutputFilename = InputFilename + '.Interpolated.'+str(usetrace)+'.hdf5'
 
         #do_interpolation(AntPath,new_pos,mypositions,Zenith,Azimuth,phigeo=147.43, thetageo=0.72, shower_core=np.array([0,0,2900]), DISPLAY=False)
-        do_interpolation_hdf5(new_pos, InputFilename, OutputFilename, antennamin=0, antennamax=159,threshold=threshold, EventNumber=0,shower_core=np.array([0,0,2900]), DISPLAY=DISPLAY, usetrace=usetrace)
+        do_interpolation_hdf5(new_pos, InputFilename, OutputFilename, antennamin=0, antennamax=159, EventNumber=0, DISPLAY=DISPLAY, usetrace=usetrace)
 
         #NewAntNum = size(new_pos)
         #NewAntNum, NewAntPos, NewAntID = get_antenna_pos_zhaires(NewAntPath)
@@ -213,7 +210,7 @@ def interpol_check_hdf5(InputFilename, positions, new_pos, p2pE, InterpolMethod,
 
     return interp_err, p2p_total_new, interp_errx, p2p_x_new, interp_erry, p2p_y_new, interp_errz, p2p_z_new
 
-def interpol_hdf5(InputFilename, OutputFilename,new_pos, p2pE=None,positions=None, InterpolMethod='trace', threshold=0,usetrace='efield', DISPLAY=False):
+def interpol_hdf5(InputFilename, OutputFilename,new_pos, p2pE=None,positions=None, InterpolMethod='trace',usetrace='efield', DISPLAY=False):
 
     '''
     Interpolates the signal peak-to-peak electric field
@@ -238,8 +235,6 @@ def interpol_hdf5(InputFilename, OutputFilename,new_pos, p2pE=None,positions=Non
         'rbf' = radial interpolation from scipy.interpolate
         'trace' = interpolation of signal traces:
             generates new interpolated trace files in path/Test/ directory
-    threshold:
-         signal above wich the trace interpolation is done (to speed up)
     usetrace:
          efield, voltage, filteredvoltage
 
@@ -266,7 +261,7 @@ def interpol_hdf5(InputFilename, OutputFilename,new_pos, p2pE=None,positions=Non
         #OutputFilename = InputFilename + '.Interpolated.'+str(usetrace)+'.hdf5'
 
         #do_interpolation(AntPath,new_pos,mypositions,Zenith,Azimuth,phigeo=147.43, thetageo=0.72, shower_core=np.array([0,0,2900]), DISPLAY=False)
-        do_interpolation_hdf5(new_pos, InputFilename, OutputFilename, antennamin=0, antennamax=159, EventNumber=0,threshold=threshold,shower_core=np.array([0,0,2900]), DISPLAY=DISPLAY, usetrace=usetrace)
+        do_interpolation_hdf5(new_pos, InputFilename, OutputFilename, antennamin=0, antennamax=159, EventNumber=0, DISPLAY=DISPLAY, usetrace=usetrace)
 
         #NewAntNum = size(new_pos)
         #NewAntNum, NewAntPos, NewAntID = get_antenna_pos_zhaires(NewAntPath)

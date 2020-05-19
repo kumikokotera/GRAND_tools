@@ -35,14 +35,16 @@ results = parser.parse_args()
 dbfile=results.DatabaseFile
 
 dbfile="/home/mjtueros/GRAND/GP300/HDF5StshpLibrary/StshpXmaxLibraryInExa24.01.sql3.db"
+dbfile="/home/mjtueros/AiresRepository/DiscreteLibraryTest/ConicalStshpTestLibrary.sql3.db"
+dbfile="/home/mjtueros/AiresRepository/DiscreteLibrary/StshpLibrary-01.sql3.db"
 #directory where the files from the library are located
 Directory = "/home/mjtueros/GRAND/GP300/HDF5StshpLibrary/Outbox"
+Directory = "/home/mjtueros/AiresRepository/DiscreteLibraryTest/ConicalStshpOutbox"
+Directory = "/home/mjtueros/AiresRepository/DiscreteLibrary/StshpOutbox"
 #what to use in the interpolation (efield, voltage, filteredvoltage)
-usetrace='voltage'
-#threshold abouve wich the interpolation is computed
-threshold=0;#26 #8.66 for 15uV , 26 for 45uV
-trigger=75
-display=False
+usetrace='efield'
+trigger=66
+display=True
 #logging.debug('This is a debug message')
 #logging.info('This is an info message')
 #logging.warning('This is a warning message')
@@ -91,9 +93,9 @@ while(DatabaseRecord!=None and countok < 1100): #500 events in 30min, withouth t
     JobDirectory = str(Directory)+"/"+str(JobName)
     Tries = mydatabase.GetTriesFromRecord(DatabaseRecord)
     #.
-    logging.debug("Reading Job " + JobName + " which was in " + DatabaseStatus + " status ("+str(Tries)+") at " + Directory)
+    #logging.debug("Reading Job " + JobName + " which was in " + DatabaseStatus + " status ("+str(Tries)+") at " + Directory)
     #.
-    if(DatabaseStatus == "RunOK"): #and JobName=="Stshp_XmaxLibrary_0.1995_80.40_180_Gamma_01"):
+    if(DatabaseStatus == "RunOK" and "Gamma" not in JobName and "_3.9" in JobName and "Proton" in JobName):
         try:
             TaskName = mydatabase.GetTasknameFromRecord(DatabaseRecord)
             Id = mydatabase.GetIdFromRecord(DatabaseRecord)
@@ -104,6 +106,7 @@ while(DatabaseRecord!=None and countok < 1100): #500 events in 30min, withouth t
             Xmax = mydatabase.GetXmaxFromRecord(DatabaseRecord)
             #.
             InputFilename=str(Directory)+"/"+str(JobName)+"/"+str(JobName)+".hdf5"
+            print("ant_interpol_chk_db:"+InputFilename)
             #.
             CurrentRunInfo=hdf5io.GetRunInfo(InputFilename)
             CurrentEventName=hdf5io.GetEventName(CurrentRunInfo,0) #using the first event of each file (there is only one for now)
@@ -121,10 +124,8 @@ while(DatabaseRecord!=None and countok < 1100): #500 events in 30min, withouth t
             AntPos=np.stack((xpoints,ypoints,zpoints), axis=0)
             #.
             #this gets the p2p values in all chanels, for all simulated antennas.
-
             p2pE = hdf5io.get_p2p_hdf5(InputFilename,antennamax=175,antennamin=0,usetrace=usetrace)
             #peaktime, peakamplitude= hdf5io.get_peak_time_hilbert_hdf5(InputFilename,antennamax=175,antennamin=0, usetrace=usetrace, DISPLAY=False)
-
             #lets append this to the an tennainfo (once)
             #from astropy.table import Table, Column
             #from astropy import units as u
@@ -140,11 +141,10 @@ while(DatabaseRecord!=None and countok < 1100): #500 events in 30min, withouth t
             #hdf5io.SaveAntennaInfo(InputFilename,CurrentAntennaInfo,CurrentEventName,overwrite=True)
             #i get an error when writing an existing table, even if the overwrite is set to true :(
             #CurrentAntennaInfo.write(InputFilename, path=CurrentEventName+"/AntennaInfo4", format="hdf5", append=True,  compression=True, serialize_meta=True, overwrite=True)
-
             #.
             NewPos = grids.create_grid(AntPos,Zenith,'check',20,10) #In Check mode, it will return the last 16 elements of Antpos, so this just Antpos[160:175]
             #.
-            InterpErr, p2p_total_new, interp_errx, p2p_x_new, interp_erry, p2p_y_new, interp_errz, p2p_z_new = intf.interpol_check_hdf5(InputFilename, AntPos, NewPos.T, p2pE,'trace',threshold=threshold, usetrace=usetrace,DISPLAY=display)
+            InterpErr, p2p_total_new, interp_errx, p2p_x_new, interp_erry, p2p_y_new, interp_errz, p2p_z_new = intf.interpol_check_hdf5(InputFilename, AntPos, NewPos.T, p2pE,'trace', usetrace=usetrace,DISPLAY=display)
             #.
             #so these are the relative errors of all interpolated antennas
             InterpErrAll[:,countok] = InterpErr
@@ -168,8 +168,6 @@ while(DatabaseRecord!=None and countok < 1100): #500 events in 30min, withouth t
             countok += 1
             #
             #now, lets open the Antenna
-
-
             print("Event #{} done".format(countok))
             #.
             #.
@@ -215,7 +213,7 @@ mybins = [-1.5,-0.5,0.5,1.5]
 ax1=fig1.add_subplot(221)
 ax1.set_xlabel('Error type')
 ax1.set_ylabel('N')
-name = 'clasification errors ' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+name = 'clasification errors ' + str(usetrace) + " trigger " + str(trigger)
 plt.title(name)
 plt.yscale('log')
 plt.hist(myerrortype, bins=mybins,alpha=0.8,label="Total",density=True)
@@ -224,7 +222,7 @@ plt.hist(myerrortype, bins=mybins,alpha=0.8,label="Total",density=True)
 ax2=fig1.add_subplot(222)
 ax2.set_xlabel('Error type')
 ax2.set_ylabel('N')
-name = 'clasification errors x' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+name = 'clasification errors x' + str(usetrace) +  " trigger " + str(trigger)
 plt.title(name)
 plt.yscale('log')
 plt.hist(myerrortypex, bins=mybins,alpha=0.8,label="Total",density=True)
@@ -232,7 +230,7 @@ plt.hist(myerrortypex, bins=mybins,alpha=0.8,label="Total",density=True)
 ax3=fig1.add_subplot(223)
 ax3.set_xlabel('Error type')
 ax3.set_ylabel('N')
-name = 'clasification errors y' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+name = 'clasification errors y' + str(usetrace) +  " trigger " + str(trigger)
 plt.title(name)
 plt.yscale('log')
 plt.hist(myerrortypey, bins=mybins,alpha=0.8,label="Total",density=True)
@@ -240,7 +238,7 @@ plt.hist(myerrortypey, bins=mybins,alpha=0.8,label="Total",density=True)
 ax4=fig1.add_subplot(224)
 ax4.set_xlabel('Error type')
 ax4.set_ylabel('N')
-name = 'clasification errors z ' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+name = 'clasification errors z ' + str(usetrace) + " trigger " + str(trigger)
 plt.title(name)
 plt.yscale('log')
 plt.hist(myerrortypez, bins=mybins,alpha=0.8,label="Total",density=True)
@@ -254,28 +252,28 @@ mybins = np.linspace(-4,0,79)
 ax1=fig2.add_subplot(221)
 ax1.set_xlabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax1.set_ylabel('N')
-name = 'overall errors ' + str(usetrace) + " threshold " + str(threshold)
+name = 'overall errors ' + str(usetrace)
 plt.title(name)
 plt.hist(np.log10(myInterpErrAll), bins=mybins,alpha=0.8,label="Total")
 
 ax2=fig2.add_subplot(222)
 ax2.set_xlabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax2.set_ylabel('N')
-name = 'overall errors x' + str(usetrace) + " threshold " + str(threshold)
+name = 'overall errors x' + str(usetrace)
 plt.title(name)
 plt.hist(np.log10(myInterpErrAllx), bins=mybins,alpha=0.8,label="x")
 
 ax3=fig2.add_subplot(223)
 ax3.set_xlabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax3.set_ylabel('N')
-name = 'overall errors y' + str(usetrace) + " threshold " + str(threshold)
+name = 'overall errors y' + str(usetrace)
 plt.title(name)
 plt.hist(np.log10(myInterpErrAlly), bins=mybins,alpha=0.8,label="y")
 
 ax4=fig2.add_subplot(224)
 ax4.set_xlabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax4.set_ylabel('N')
-name = 'overall errors z' + str(usetrace) + " threshold " + str(threshold)
+name = 'overall errors z' + str(usetrace)
 plt.title(name)
 plt.hist(np.log10(myInterpErrAllz), bins=mybins,alpha=0.8,label="z")
 
@@ -307,7 +305,7 @@ print(np.shape(myP2pAll2),np.shape(myP2pAll2x),np.shape(myP2pAll2y),np.shape(myP
 
 fig3 = plt.figure(3,figsize=(7,5), dpi=100, facecolor='w', edgecolor='k')
 ax1=fig3.add_subplot(221)
-name = ' Total ' + str(usetrace) + " threshold " + str(threshold)
+name = ' Total ' + str(usetrace)
 plt.title(name)
 ax1.set_ylabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax1.set_xlabel('$log_{10} E_{sim}  [\mu V/m]$')
@@ -315,21 +313,21 @@ plt.hist2d(np.log10(myP2pAll2),np.log10(myInterpErrAll2),bins=[100,79],range=[[-
 
 
 ax2=fig3.add_subplot(222)
-name = ' x ' + str(usetrace) + " threshold " + str(threshold)
+name = ' x ' + str(usetrace)
 plt.title(name)
 ax2.set_ylabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax2.set_xlabel('$log_{10} E_{sim}  [\mu V/m]$')
 plt.hist2d(np.log10(myP2pAll2x),np.log10(myInterpErrAll2x),bins=[100,79],range=[[-2, 3], [-4, 0]])
 
 ax3=fig3.add_subplot(223)
-name = ' y ' + str(usetrace) + " threshold " + str(threshold)
+name = ' y ' + str(usetrace)
 plt.title(name)
 ax3.set_ylabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax3.set_xlabel('$log_{10} E_{sim}  [\mu V/m]$')
 plt.hist2d(np.log10(myP2pAll2y),np.log10(myInterpErrAll2y),bins=[100,79],range=[[-2, 3], [-4, 0]])
 
 ax4=fig3.add_subplot(224)
-name = ' z ' + str(usetrace) + " threshold " + str(threshold)
+name = ' z ' + str(usetrace)
 plt.title(name)
 ax4.set_ylabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax4.set_xlabel('$log_{10} E_{sim}  [\mu V/m]$')
