@@ -27,9 +27,68 @@ Z_SITE = 2900 # height of GP300 site in km
 radius = 1000
 
 
+
+tri1_125, _= grids.create_grid_univ("trihex", 125, input_n_ring=1)
+tri4_125, _ = grids.create_grid_univ("trihex", 125, input_n_ring=4)
+
+tri1_250, _ = grids.create_grid_univ("trihex", 250, input_n_ring=1)
+hex2_500, _ = grids.create_grid_univ("hexhex", 500, input_n_ring=2)
+hex5_1000, _ = grids.create_grid_univ("hexhex", 1000, input_n_ring=5)
+
+plt.figure(1)
+plt.clf()
+plt.plot(tri1_125[0]+10, tri1_125[1]+10, 'k.')
+plt.plot(tri4_125[0], tri4_125[1], 'r.')
+plt.plot(hex2_500[0], hex2_500[1], 'g.')
+
+
+plt.figure(2)
+plt.clf()
+plt.plot(hex5_1000[0], hex5_1000[1], 'k.')
+a = plt.axis("equal")
+plt.title('hexhex5, radius = 1000m')
+plt.xlabel('x [m]')
+plt.ylabel('y [m]') 
+plt.savefig("hexhex5_1000.png")
+
+#plt.plot(tri1_250[0]-10, tri1_250[1]-10, 'g.', )
+
+
+
+
+
+
+plt.plot(xpix2[:,0], xpix2[:,1], 'g.')
+plt.plot(xpix4[:,0], xpix4[:,1], 'c.')
+plt.plot(pos[:,0]+100, pos[:,1]+100, 'm.')
+plt.axis('equal')
+
+
+
+
 #hex4, _ = grids.create_grid_univ('hexhex', radius, input_n_ring=4)
-def get_triisle_mask(n_ring, radius, do_plots=False):
- 
+def get_suphex_mask(n_ring, radius, do_plots=False):
+
+    ## center trihex 1 step 125
+
+    tri1 = grids.create_grid_univ("trihex", 125, input_n_ring=1)
+    tri4_1000 = grids.create_grid_univ("trihex", 1000, input_n_ring=4)
+
+    plt.figure(1)
+    plt.clf()
+    plt.plot(hexx[:,0], hexx[:,1], 'k.')
+    plt.plot(xpix0[:,0], xpix0[:,1], 'r.')
+    plt.plot(xpix2[:,0], xpix2[:,1], 'g.')
+    plt.plot(xpix4[:,0], xpix4[:,1], 'c.')
+    plt.plot(pos[:,0]+100, pos[:,1]+100, 'm.')
+    plt.axis('equal')
+
+
+
+
+
+
+
     hexx, _ = grids.get_hexarray(n_ring, radius)
     
     n = 0
@@ -211,7 +270,7 @@ ev_select_t_to_h4= [
 ]
 ev_select_t_to_h4 = np.concatenate([*ev_select_t_to_h4])  
 
-ev_select_t_to_triisle4 = [
+ev_select_t_to_triisle4= [
     ua.get_ev_select(
         events_data_dir,
         "trihex",
@@ -219,14 +278,14 @@ ev_select_t_to_triisle4 = [
         step,
         threshold,
         n_trig_thres,
-        prune_layout=("t_to_triisle4", mask2)
+        prune_layout=("t_to_triisle4", mask1)
     )
     for step in trihex_steps
 ]
 ev_select_t_to_triisle4 = np.concatenate([*ev_select_t_to_triisle4])  
 
 
-ev_select_t4 = [
+ev_select_t4= [
     ua.get_ev_select(
         events_data_dir,
         "trihex",
@@ -336,11 +395,6 @@ rate_t_to_h4 = Ntrig2_ener_t_to_h4.copy() * 0
 rate_t_to_triisle4 = Ntrig2_ener_t_to_triisle4.copy() * 0
 rate_t4 = Ntrig2_ener_t4.copy() * 0
 
-rate_t_to_h4_area = Ntrig2_ener_t_to_h4.copy() * 0
-rate_t_to_triisle4_area = Ntrig2_ener_t_to_triisle4.copy() * 0
-rate_t4_area = Ntrig2_ener_t4.copy() * 0
-
-
 
 for iener, ener in enumerate(enerbins):
     for istep, step in enumerate(stepbins):
@@ -364,24 +418,7 @@ for iener, ener in enumerate(enerbins):
                 delta_E[iener] *1e18 * delta_omega[izen] *
                 area_hexhex[istep] * np.cos(zen*np.pi/180) /area_trihex[istep]*1e6 # !! finally we divide by the area here
             )
-            rate_t_to_h4_area[istep, iener, izen] = (
-                Ntrig2_ener_t_to_h4[istep,iener,izen] * 
-                diff_spec.tale_diff_flux(ener*1e18) * 
-                delta_E[iener] *1e18 * delta_omega[izen] *
-                area_hexhex[istep] * np.cos(zen*np.pi/180) 
-            )
-            rate_t_to_triisle4_area[istep, iener, izen] = (
-                Ntrig2_ener_t_to_triisle4[istep,iener,izen] * 
-                diff_spec.tale_diff_flux(ener*1e18) * 
-                delta_E[iener] *1e18 * delta_omega[izen] *
-                area_hexhex[istep] * np.cos(zen*np.pi/180) 
-            )
-            rate_t4_area[istep, iener, izen] = (
-                Ntrig2_ener_t4[istep,iener,izen] * 
-                diff_spec.tale_diff_flux(ener*1e18) * 
-                delta_E[iener] *1e18 * delta_omega[izen] *
-                area_hexhex[istep] * np.cos(zen*np.pi/180) 
-            )
+
 
 
 
@@ -430,53 +467,4 @@ for izen in range(0, len(zenbins)-1):
     plt.ylim(1.e-5,1.e1)        
     #plt.show()
     plt.savefig('evrate_vs_energy_z%4.1f_all_30muV.png'%(180-zenbins[izen+1]))
-
-
-
-
-for izen in range(0, len(zenbins)-1):
-    plt.figure(izen) 
-    plt.clf()
-    for istep, step in enumerate(stepbins):
-        
-        plt.errorbar(
-            enerbins,
-            rate_t_to_h4_area[istep,:,izen] * 24*3600,
-            fmt="C%d"%istep+'h',
-            ms=10,           
-            ls='-',
-            capsize=2,
-            alpha=0.7,
-            #label='step = %d m'%(np.int32(step))
-        )
-        plt.errorbar(
-            enerbins,
-            rate_t_to_triisle4_area[istep,:,izen] * 24*3600,
-            fmt="C%d"%istep+'.',
-            ms=10,           
-            ls=':',
-            capsize=2,
-            alpha=0.7,
-            #label='step = %d m'%(np.int32(step))
-        )
-        plt.errorbar(
-            enerbins,
-            rate_t4_area[istep,:,izen] * 24*3600,
-            fmt="C%d"%istep+'^',
-            ms=8,           
-            ls='--',
-            capsize=2,
-            alpha=0.7,
-            #label='step = %d m'%(np.int32(step))
-        )
-
-    plt.yscale('log')
-    plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
-    plt.xlabel('energy [EeV]')
-    plt.title('%s, %4.2f > zenith > %4.2f deg'%("trihex", thetar[izen], thetal[izen+1]))
-    plt.legend(loc=1)
-    #plt.ylim(1.e-1,1.e2)
-    plt.ylim(1.e-5, 1.e2)        
-    #plt.show()
-    plt.savefig('evrate_area_vs_energy_z%4.1f_all_30muV.png'%(180-zenbins[izen+1]))
 

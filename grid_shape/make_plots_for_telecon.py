@@ -1,3 +1,4 @@
+
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -5,35 +6,27 @@ import json
 import diff_spec
 import grids as grids
 import utils_analysis as ua
+from matplotlib import cm
 
 
 
-
-
-#path = "/Users/kotera/BROQUE/Data_GRAND/Matias/InterpolationOutputExample/"
-#path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibrary02/"
-#path = "/Users/kotera/BROQUE/Data_GRAND/Matias/P2PdataNew/"
-#path = "/Users/kotera/BROQUE/Data_GRAND/Matias/StshpLibrary-HDF5-Grids/"
 path = "/Users/benoitl/Documents/GRAND/StshpLibaryHDF5-Grids/"
-
-#plot_path = '/Users/kotera/BROQUE/Plots_GRAND/'
 plot_path = '/Users/benoitl/Documents/GRAND/plots_tests'
-#events_data_dir = "/Users/kotera/BROQUE/Data_GRAND/Matias/event_data"
 events_data_dir = "/Users/benoitl/Documents/GRAND/event_data"
 
 os.makedirs(plot_path, exist_ok=True)
 os.makedirs(events_data_dir, exist_ok=True)
+
 
 threshold = 30 # trigger threshold for individual antennas in muV
 n_trig_thres = 5 # number of triggered antennas required to trigger an event
  
 
 merged_file_dir = "/Users/benoitl/Documents/GRAND/StshpLibrary-HDF5-Grids_merge/"
-
 config_json_file = os.path.join(merged_file_dir, 'merge_config.json')
-
 with open(config_json_file) as f:
     config_merged = json.load(f)
+
 
 
 
@@ -43,7 +36,7 @@ radius = 1000
 
 
 
-pos, offset, mask = grids.create_grid_univ(grid_shape, radius, do_prune=True)
+pos, offset, mask = grids.create_grid_univ(grid_shape, radius, do_prune=True, input_n_ring=4)
 
 
 trihex_steps = config_merged["layouts"]["trihex"]
@@ -115,9 +108,18 @@ for i in range(216):
 
 mask5 = mask5.astype(bool)
 
-plt.figure(245)
+
+#### PLOT 1
+
+plt.figure(1, figsize=(8,5))
 plt.clf()
-plt.scatter(hex5[0], hex5[1], c = mask5[:,0])
+plt.scatter(hex5[0], hex5[1], c = 1-mask5[:,0], cmap =plt.get_cmap("viridis") )
+plt.axis('equal')
+plt.xlabel('x [m]')
+plt.ylabel('y [m]')
+plt.savefig('hexhex_5to4.png')
+
+
 
 
 
@@ -151,7 +153,6 @@ ev_select_hexhex5to4 = [
     for step in hexhex_steps
 ]
 ev_select_hexhex5to4 = np.concatenate([*ev_select_hexhex5to4])  
-
 
 
 ev_select = ev_select_trihex
@@ -211,7 +212,7 @@ delta_theta = thetal - thetar
 delta_omega = 2*np.pi * delta_theta *np.pi/180 * np.sin(np.pi/2 - zenbins*np.pi/180)
 
 area_hexhex = stepbins**2 *3*np.sqrt(3)/2 * 91
-area_trihex = stepbins**2 *np.sqrt(3)/4 * 61 * 6
+
 # calculate mean and variance of triggered event numbers in each zenith angle and energy bins 
 
 Ntrig2_ener_hexhex1 = ua.compute_trig_rate(
@@ -232,9 +233,6 @@ Ntrig2_ener_hexhex2 = ua.compute_trig_rate(
 rate_hexhex1 = Ntrig2_ener_hexhex1.copy() * 0
 rate_hexhex2 = Ntrig2_ener_hexhex2.copy() * 0
 
-rate_hexhex1_area = Ntrig2_ener_hexhex1.copy() * 0
-rate_hexhex2_area = Ntrig2_ener_hexhex2.copy() * 0
-
 
 for iener, ener in enumerate(enerbins):
     for istep, step in enumerate(stepbins):
@@ -244,26 +242,16 @@ for iener, ener in enumerate(enerbins):
                 Ntrig2_ener_hexhex1[istep,iener,izen] * 
                 diff_spec.tale_diff_flux(ener*1e18) * 
                 delta_E[iener] *1e18 * delta_omega[izen] *
-                area_trihex[istep] * np.cos(zen*np.pi/180) /area_trihex[istep]*1e6 # !! finally we divide by the area here
+                area_hexhex[istep] * np.cos(zen*np.pi/180) /area_hexhex[istep] # !! finally we divide by the area here
             )
             rate_hexhex2[istep, iener, izen] = (
                 Ntrig2_ener_hexhex2[istep,iener,izen] * 
                 diff_spec.tale_diff_flux(ener*1e18) * 
                 delta_E[iener] *1e18 * delta_omega[izen] *
-                area_hexhex[istep] * np.cos(zen*np.pi/180) /area_hexhex[istep]*1e6# !! finally we divide by the area here
+                area_hexhex[istep] * np.cos(zen*np.pi/180) /area_hexhex[istep] # !! finally we divide by the area here
             )
-            rate_hexhex1_area[istep, iener, izen] = (
-                Ntrig2_ener_hexhex1[istep,iener,izen] * 
-                diff_spec.tale_diff_flux(ener*1e18) * 
-                delta_E[iener] *1e18 * delta_omega[izen] *
-                area_trihex[istep] * np.cos(zen*np.pi/180) # 
-            )
-            rate_hexhex2_area[istep, iener, izen] = (
-                Ntrig2_ener_hexhex2[istep,iener,izen] * 
-                diff_spec.tale_diff_flux(ener*1e18) * 
-                delta_E[iener] *1e18 * delta_omega[izen] *
-                area_hexhex[istep] * np.cos(zen*np.pi/180) # 
-            )
+            
+
 
 
 
@@ -285,46 +273,8 @@ for izen in range(0, len(zenbins)-1):
         plt.errorbar(
             enerbins,
             rate_hexhex2[istep,:,izen] * 24*3600,
-            fmt="C%d"%istep+'X',
-            ms=10,           
-            ls=':',
-            capsize=2,
-            alpha=0.7,
-            #label='step = %d m'%(np.int32(step))
-        )
-
-    plt.yscale('log')
-    plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1} km^{-2}]$')
-    plt.xlabel('energy [EeV]')
-    plt.title('%s, %4.2f > zenith > %4.2f deg'%("trihex", thetar[izen], thetal[izen+1]))
-    plt.legend(loc=1)
-    #plt.ylim(1.e-1,1.e2)
-    plt.ylim(1.e-5,1.e1)        
-    #plt.show()
-    plt.savefig('compmethod_evrate_vs_energy_z%4.1f_all_30muV.png'%(180-zenbins[izen+1]))
-
-
-
-for izen in range(0, len(zenbins)-1):
-    plt.figure(izen) 
-    plt.clf()
-    for istep, step in enumerate(stepbins):
-        
-        plt.errorbar(
-            enerbins,
-            rate_hexhex1_area[istep,:,izen] * 24*3600,
             fmt="C%d"%istep+'h',
             ms=10,           
-            ls='-',
-            capsize=2,
-            alpha=0.7,
-            #label='step = %d m'%(np.int32(step))
-        )
-        plt.errorbar(
-            enerbins,
-            rate_hexhex2_area[istep,:,izen] * 24*3600,
-            fmt="C%d"%istep+'X',
-            ms=10,           
             ls=':',
             capsize=2,
             alpha=0.7,
@@ -332,14 +282,15 @@ for izen in range(0, len(zenbins)-1):
         )
 
     plt.yscale('log')
-    plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1}]$')
+    plt.ylabel('triggered event rate over array '+'$\\nu_{ev}\, [day^{-1} m^{-2}]$')
     plt.xlabel('energy [EeV]')
     plt.title('%s, %4.2f > zenith > %4.2f deg'%("trihex", thetar[izen], thetal[izen+1]))
     plt.legend(loc=1)
     #plt.ylim(1.e-1,1.e2)
-    plt.ylim(1.e-4,1.e2)        
+    plt.ylim(1.e-11,1.e-5)        
     #plt.show()
-    plt.savefig('compmethod_area_evrate_vs_energy_z%4.1f_all_30muV.png'%(180-zenbins[izen+1]))
+   # plt.savefig(os.path.join(plot_path,'evrate_vs_energy_z%4.1f_all_30muV.png'%(180-zenbins[izen+1])))
+
 
 
 
@@ -388,18 +339,27 @@ pos_tri, _ = grids.create_grid_univ("trihex", radius)
 
 
 
-plt.figure(3)
+plt.figure(3, figsize = (8,5))
 plt.clf()
 plt.scatter(pos_hex[0], pos_hex[1], c = ht)
-plt.axis("equal")
-plt.colorbar()
+a = plt.axis("equal")
+cbar = plt.colorbar()
+cbar.set_label('P2Ptot [muV]')
+plt.xlabel('x [m]')
+plt.ylabel('y [m]')
+plt.title("Stshp_XmaxLibrary_0.03981_73.39_90_Proton_05 hexhex5", fontsize=10)
+plt.savefig('footprint_hex5.png')
 
-plt.figure(4)
+plt.figure(4, figsize = (8,5))
 plt.clf()
 plt.scatter(pos_tri[0], pos_tri[1], c = tt)
-plt.axis("equal")
-plt.colorbar()
-
+plt.axis(a)
+cbar = plt.colorbar()
+cbar.set_label('P2Ptot [muV]')
+plt.xlabel('x [m]')
+plt.ylabel('y [m]')
+plt.title("Stshp_XmaxLibrary_0.03981_73.39_90_Proton_05 trihex4", fontsize=10)
+plt.savefig('footprint_tri4.png')
 
 
 
