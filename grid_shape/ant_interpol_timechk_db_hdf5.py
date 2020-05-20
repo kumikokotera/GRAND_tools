@@ -108,7 +108,7 @@ while(DatabaseRecord!=None and countok < 1000): #500 events in 30min, withouth t
             #.
             CurrentRunInfo=hdf5io.GetRunInfo(InputFilename)
             CurrentEventName=hdf5io.GetEventName(CurrentRunInfo,0) #using the first event of each file (there is only one for now)
-            CurrentAntennaInfo=hdf5io.GetAntennaInfo4(InputFilename,CurrentEventName)
+            CurrentAntennaInfo=hdf5io.GetAntennaInfo(InputFilename,CurrentEventName)
             #.
             #AntNum, AntPos, AntID = intf.get_antenna_pos_zhaires(JobDirectory+'/antpos.dat')
             #one way of putting the antenna information as the numpy array this script was designed to use:
