@@ -27,6 +27,7 @@ import AiresInfoFunctions as AiresInfo
 import interpol_func_hdf5 as intf
 import grids
 
+
 parser = argparse.ArgumentParser(description='A script to get the CPU time in a library of Simulations')
 parser.add_argument('DatabaseFile', #name of the parameter
                     metavar="filename", #name of the parameter value in the help
@@ -125,6 +126,7 @@ while(DatabaseRecord!=None and countok < 1100): #500 events in 30min, withouth t
             #.
             #this gets the p2p values in all chanels, for all simulated antennas.
             p2pE = hdf5io.get_p2p_hdf5(InputFilename,antennamax=175,antennamin=0,usetrace=usetrace)
+
             #peaktime, peakamplitude= hdf5io.get_peak_time_hilbert_hdf5(InputFilename,antennamax=175,antennamin=0, usetrace=usetrace, DISPLAY=False)
             #lets append this to the an tennainfo (once)
             #from astropy.table import Table, Column
@@ -166,6 +168,7 @@ while(DatabaseRecord!=None and countok < 1100): #500 events in 30min, withouth t
             errortypez[:,countok]=[1 if  (p2p_z_new[i] >= trigger and p2pE[2,160+i]<trigger) else -1 if (p2p_z_new[i] < trigger and p2pE[2,160+i]>=trigger) else 0 if (p2p_z_new[i] >= trigger and p2pE[2,160+i]>=trigger) else -2 for i in a]
             #.
             countok += 1
+
             #
             #now, lets open the Antenna
             print("Event #{} done".format(countok))
@@ -205,6 +208,10 @@ myerrortypez=errortypez[indz]
 print(np.shape(P2pAll),np.shape(P2pAllx),np.shape(P2pAlly),np.shape(P2pAllz))
 print(np.shape(myP2pAll),np.shape(myP2pAllx),np.shape(myP2pAlly),np.shape(myP2pAllz))
 
+##############Plot histogram of relative errors, for all components####################################
+fig1 = plt.figure(1,figsize=(7,5), dpi=100, facecolor='w', edgecolor='k')
+mybins = [-1.5,-0.5,0.5,1.5]
+
 
 ##############Plot histogram of relative errors, for all components####################################
 fig1 = plt.figure(1,figsize=(7,5), dpi=100, facecolor='w', edgecolor='k')
@@ -213,7 +220,12 @@ mybins = [-1.5,-0.5,0.5,1.5]
 ax1=fig1.add_subplot(221)
 ax1.set_xlabel('Error type')
 ax1.set_ylabel('N')
+<<<<<<< HEAD
 name = 'clasification errors ' + str(usetrace) + " trigger " + str(trigger)
+=======
+name = 'clasification errors ' + str(usetrace) + " threshold " + str(threshold) + " trigger " + str(trigger)
+
+>>>>>>> 235501f71027d6dc0934b6a3bc57dc658654bd6b
 plt.title(name)
 plt.yscale('log')
 plt.hist(myerrortype, bins=mybins,alpha=0.8,label="Total",density=True)
@@ -263,6 +275,7 @@ name = 'overall errors x' + str(usetrace)
 plt.title(name)
 plt.hist(np.log10(myInterpErrAllx), bins=mybins,alpha=0.8,label="x")
 
+
 ax3=fig2.add_subplot(223)
 ax3.set_xlabel('$log_{10} |E_{int}-E_{sim}|/E_{sim}$')
 ax3.set_ylabel('N')
@@ -282,6 +295,8 @@ plt.tight_layout()
 
 ####################Plot 2d histogram, relative errors vs signal, all components##################################3
 
+####################Plot 2d histogram, relative errors vs signal, all components##################################3
+
 ind = np.where(myP2pAll != 0) #now i remove the cases where the signal is 0
 myInterpErrAll2 = myInterpErrAll[ind]
 myP2pAll2= myP2pAll[ind]
@@ -289,6 +304,7 @@ myP2pAll2= myP2pAll[ind]
 indx = np.where(myP2pAllx != 0) #now i remove the cases where the signal is 0
 myInterpErrAll2x = myInterpErrAllx[indx]
 myP2pAll2x= myP2pAll[indx]
+
 
 indy = np.where(myP2pAlly != 0) #now i remove the cases where the signal is 0
 myInterpErrAll2y = myInterpErrAlly[indy]
