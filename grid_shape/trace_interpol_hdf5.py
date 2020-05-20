@@ -525,11 +525,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     hdf5io.SaveRunInfo(OutputFilename,CurrentRunInfo)
     hdf5io.SaveEventInfo(OutputFilename,CurrentEventInfo,CurrentEventName)
 
-<<<<<<< HEAD
     #making the table of desired antennas for the file (but we will save it later, when we know wich were actually used)
-=======
-    #making the table of desired antennas for the file
->>>>>>> 235501f71027d6dc0934b6a3bc57dc658654bd6b
     DesiredAntennaInfoMeta=hdf5io.CreatAntennaInfoMeta(split(InputFilename)[1],CurrentEventName,AntennaModel="Interpolated")
     DesiredIds=np.arange(0, len(positions_des)) #this could be taken from the input file of desired antennas
     DesiredAntx=deepcopy(positions_des.T[0])
@@ -537,13 +533,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     DesiredAntz=deepcopy(positions_des.T[2]) #this deepcopy bullshit is becouse position_des is later modified by the rotation, and transposition apparently creates a shallow copy (a reference)
     DesiredSlopeA=np.zeros(len(positions_des))
     DesiredSlopeB=np.zeros(len(positions_des))
-<<<<<<< HEAD
     DesiredT0=np.zeros(len(positions_des))
-=======
-    DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta)
-
-    hdf5io.SaveAntennaInfo(OutputFilename,DesiredAntennaInfo,CurrentEventName,overwrite=True)
->>>>>>> 235501f71027d6dc0934b6a3bc57dc658654bd6b
 
 
     #not using them, but i put SignalSim And ShowerSim Info
@@ -1103,12 +1093,7 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 #        print("%3.2f %1.5e %1.5e %1.5e" % (xnew_desiredx[j], tracedes_desiredx[j], tracedes_desiredy[j], tracedes_desiredz[j]), end='\n', file=FILE)
                 #FILE.close()
 
-<<<<<<< HEAD
                 if(tracetype=='efield'):
-=======
-
-                if(usetrace=='efield'):
->>>>>>> 235501f71027d6dc0934b6a3bc57dc658654bd6b
                     efield=np.column_stack((xnew_desiredx,tracedes_desiredx,tracedes_desiredy,tracedes_desiredz))
                     EfieldTable=hdf5io.CreateEfieldTable(efield, CurrentEventName, CurrentEventNumber , DesiredIds[i], i, "Interpolated", info={})
                     hdf5io.SaveEfieldTable(OutputFilename,CurrentEventName,str(DesiredIds[i]),EfieldTable)
@@ -1126,7 +1111,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
                 del points_I, points_II, points_III, points_IV
 
 
-<<<<<<< HEAD
     #now, lets remove the antennas fromthe index
     #for i in remove_antenna:
     DesiredIds=np.delete(DesiredIds,remove_antenna)
@@ -1140,8 +1124,6 @@ def do_interpolation_hdf5(desired, InputFilename, OutputFilename, antennamin=0, 
     DesiredAntennaInfo=hdf5io.CreateAntennaInfo(DesiredIds, DesiredAntx, DesiredAnty, DesiredAntz, DesiredT0, DesiredSlopeA, DesiredSlopeB, DesiredAntennaInfoMeta)
     hdf5io.SaveAntennaInfo(OutputFilename,DesiredAntennaInfo,CurrentEventName)
 
-=======
->>>>>>> 235501f71027d6dc0934b6a3bc57dc658654bd6b
     #now aim at the point where all the antennas where interpolated and saved to file. Now i will calulate the peak to peak and hilbert envelope peak and time
     #this is done after everything was computed.
     if(usetrace=="all"):
