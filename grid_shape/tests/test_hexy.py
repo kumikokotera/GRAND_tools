@@ -1,4 +1,4 @@
-import hexy as hx
+from grid_shape import hexy as hx
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -29,8 +29,8 @@ Nant = x_pos_new.shape[0]
 print('number of antennas', Nant)
 
 fig, axs = plt.subplots(1,1) 
-#axs.plot(hexarray[:,0], hexarray[:,1], 'k.')  
-#axs.plot(x_pos_new, y_pos_new, 'k.')       
+axs.plot(hexarray[:,0], hexarray[:,1], 'k.')  
+axs.plot(x_pos_new, y_pos_new, 'k.')       
 axs.axis('equal')  
 plt.show()
 

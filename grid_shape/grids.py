@@ -125,7 +125,7 @@ def create_grid_univ(
         xNum = 15
         yNum = 15
 
-        grid_x, grid_y = mgrid[0:xNum*radius:radius, 0:yNum*radius:radius]
+        grid_x, grid_y = np.mgrid[0:xNum*radius:radius, 0:yNum*radius:radius]
 
         grid_x = grid_x - (xNum-1)*radius/2
         grid_y = grid_y - (yNum-1)*radius/2

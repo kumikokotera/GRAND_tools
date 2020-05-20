@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import grids
+from grid_shape import grids as grids
 
 n = 1000
 
