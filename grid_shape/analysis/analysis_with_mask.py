@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import json
-import diff_spec
-import grids as grids
-import utils_analysis as ua
-
+from grid_shape import diff_spec as diff_spec
+from grid_shape import grids as grids
+from grid_shape import utils_analysis as ua
+ 
 
 
 
