@@ -1,4 +1,4 @@
-import grids 
+from grid_shape import grids as grids
 import matplotlib.pyplot as plt
 import numpy as np 
 

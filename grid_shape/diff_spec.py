@@ -2,7 +2,6 @@ import os
 import numpy as np
 
 
-
 def tale_diff_flux(E): # E en eV
     """
     spectrum data from TALE https://arxiv.org/pdf/1803.01288.pdf
@@ -11,7 +10,6 @@ def tale_diff_flux(E): # E en eV
     output: J(E) in eV^-1 m^-2 s^-1 sr^-1 
     """
 
-  
     bp1 = 16.22
     bp2 = 17.04
 

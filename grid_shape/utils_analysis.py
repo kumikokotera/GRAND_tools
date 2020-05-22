@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import json
 import matplotlib.pyplot as plt
 
 '''
@@ -12,7 +13,9 @@ SYM_LIST = ['.','o','v','*','s','.','o','v','*','s','.','o','v','*','s']
 MYC = ['0','0.20','0.4','0.6','0.8']
 
 
-class Event:
+
+
+class Event_old:
     def __init__(self,f1,f2, step, name):
         p2px, p2py, p2pz, p2ptot = np.loadtxt(f1)
         self.p2px = p2px
@@ -51,6 +54,52 @@ class Event:
         return self.p2ptot > threshold
 
 
+class Event:
+    def __init__(self, showerinfo, showerdata, step, name, prune_layout=()):
+       
+        p2px, p2py, p2pz, p2ptot = showerdata
+        if prune_layout == ():
+            self.p2px = np.array(p2px)
+            self.p2py = np.array(p2py)
+            self.p2pz = np.array(p2pz)
+            self.p2ptot = np.array(p2ptot)
+        else:            
+            self.p2px = np.array(p2px)[prune_layout[1][:,0]]
+            self.p2py = np.array(p2py)[prune_layout[1][:,0]]
+            self.p2pz = np.array(p2pz)[prune_layout[1][:,0]]
+            self.p2ptot = np.array(p2ptot)[prune_layout[1][:,0]]
+
+        # JobName,Primary,Energy,Zenith,Azimuth,XmaxDistance,SlantXmax,RandomCore[0],RandomCore[1],RandomAzimuth,HadronicModel
+        A = showerinfo[0]
+        A = A.strip().split()
+        self.jobname = A[0]
+        self.primary = A[1]
+        self.energy = np.float32(A[2])
+        self.zenith = np.float32(A[3])
+        self.azimuth = np.float32(A[4])
+        self.xmax_distance = np.float32(A[5])
+        self.slant_xmax = np.float32(A[6])
+        self.random_core0 = np.float32(A[7])
+        self.random_core1 = np.float32(A[8])
+        self.random_azimuth = np.float32(A[9])
+        self.hadronic_model = A[10]
+        self.step = np.float32(step)
+        self.name = name
+        self.init_layout()
+
+    def init_layout(self):
+        if "hexhex" in self.name:
+            self.layout = "hexhex"
+        elif "rect" in self.name:
+            self.layout = "rect"
+        elif "trihex" in self.name:
+            self.layout = "trihex"
+        else:
+            self.layout = "unknown"
+
+    def is_triggered1(self, threshold):
+        return self.p2ptot > threshold
+
 def make_ev_list(path):
     ev_list = []
     count = 0
@@ -72,11 +121,187 @@ def make_ev_list(path):
     return ev_list
 
 
+def get_info_from_merged_filename(merged_file):
+    bn = os.path.basename(merged_file)
+    bn = os.path.splitext(bn)[0]
+   
+    return bn.split('_')
+
+
+def make_ev_list_from_merged_file(merged_file, prune_layout=()):
+    ev_list = []
+    count = 0
+
+    primary, grid_shape, step = get_info_from_merged_filename(merged_file)
+
+    with open(merged_file) as f:
+        data = json.load(f)
+
+    keys = list(data.keys())
+
+    for subdir in keys:
+        if "ef" in data[subdir]:
+            name = subdir + ".Interpolated." + "%s_%s_efield.P2Pdat"%(grid_shape, step) 
+            ev_list.append(
+                Event(
+                    data[subdir]["ef_showerinfo"],
+                    data[subdir]["ef"],
+                    step, 
+                    name,
+                    prune_layout
+                )
+            )
+        if "vo" in data[subdir]:
+            name = subdir + ".Interpolated." + "%s_%s_voltage.P2Pdat"%(grid_shape, step) 
+            ev_list.append(
+                Event(
+                    data[subdir]["vo_showerinfo"],
+                    data[subdir]["vo"],
+                    step,
+                    name,
+                    prune_layout
+                )
+            )
+            
+    return ev_list
+
+
+
+
+def create_ev_select_from_config_merged(
+    events_data_dir,
+    merged_file_dir,
+    config_merged, 
+    threshold,
+    n_trig_thres,
+    prune_layout=()
+):
+    """
+    Creates all the ev_select files for all the configurations defined in the 
+    config_merged files, for given threshold and n_trig_thres
+    The idea of this function is to have a func that created everything once and for all
+    """
+
+    for primary in config_merged["primaries"]:
+        for k,v in config_merged["layouts"].items():
+            for step in v:
+                _ = create_ev_select(
+                    events_data_dir,
+                    merged_file_dir,
+                    k,
+                    primary,
+                    step,
+                    threshold,
+                    n_trig_thres,
+                    prune_layout
+                )
+
+
+def create_ev_select(
+    events_data_dir,
+    merged_file_dir,
+    grid_shape,
+    primary,
+    step,
+    threshold,
+    n_trig_thres,
+    prune_layout=()
+):
+    
+    # ev_select_name is e.g. ev_select_hexhex_Proton_250_30.0000_5_.npy
+    ev_select_name = 'ev_select_%s_%s_%s_%2.4f_%d_%s.npy'
+    ev_select_file = os.path.join(events_data_dir, ev_select_name)
+
+    if prune_layout == ():
+        ev_select_file = ev_select_file%(
+            grid_shape,
+            primary,
+            step,
+            threshold,
+            n_trig_thres,
+            ""
+        )
+    else:
+        ev_select_file = ev_select_file%(
+            grid_shape,
+            primary,
+            step,
+            threshold,
+            n_trig_thres,
+            prune_layout[0]
+        )
+
+    do_make_ev_list = isnot_ev_select(ev_select_file)
+
+    if do_make_ev_list:
+        print('creating ev_select_file for {} {} {}'.format(grid_shape, primary, step))
+        merged_file = os.path.join(merged_file_dir, '%s_%s_%s.json'%(primary, grid_shape, step))
+        ev_list = make_ev_list_from_merged_file(merged_file, prune_layout)
+        
+        for ev in ev_list:
+            if "voltage" in ev.name:
+                ev.num_triggered = sum(ev.is_triggered1(threshold))
+                ev.is_triggered2 = (ev.num_triggered > n_trig_thres)
+
+        ev_select = [
+            (
+                ev.num_triggered,
+                ev.energy,
+                ev.step,
+                ev.zenith,
+                ev.is_triggered2
+            ) for  ev in ev_list
+        if "voltage" in ev.name
+        ]
+
+        ev_select = np.array(ev_select)
+        np.save(ev_select_file, ev_select)
+       
+
+def get_ev_select(
+    events_data_dir,
+    grid_shape,
+    primary,
+    step,
+    threshold,
+    n_trig_thres,
+    prune_layout=()
+):
+    
+    # ev_select_name is e.g. ev_select_hexhex_Proton_250_30.0000_5_.npy
+    ev_select_name = 'ev_select_%s_%s_%s_%2.4f_%d_%s.npy'
+    ev_select_file = os.path.join(events_data_dir, ev_select_name)
+
+
+    if prune_layout == ():
+        ev_select_file = ev_select_file%(
+            grid_shape,
+            primary,
+            step,
+            threshold,
+            n_trig_thres,
+            ""
+        )
+    else:
+        ev_select_file = ev_select_file%(
+            grid_shape,
+            primary,
+            step,
+            threshold,
+            n_trig_thres,
+            prune_layout[0]
+        )
+
+   
+    ev_select = np.load(ev_select_file)
+    return ev_select
+
+
 def isnot_ev_select(ev_select_file):
     return not(os.path.isfile(ev_select_file))
 
 
-def make_ev_select(ev_list, layout, primary, ev_select_file):
+def make_ev_select_old(ev_list, layout, primary, ev_select_file):
     ev_select = [
         (
             ev.num_triggered,
@@ -356,4 +581,4 @@ def plot_rate_fixedenergy_vszenith(
         plt.ylim(1.e-2,1.1)
         plt.xlim(45,90)
         #plt.show()
-        plt.savefig(os.path.join(plot_path, 'trigevrate_vs_zen_E%4.3f_%s_Proton_10N.png'%(ener, layout)))
+        plt.savefig(os.path.join(plot_path, 'trigevrate_vs_zen_E%4.3f_%s_Proton.png'%(ener, layout)))
