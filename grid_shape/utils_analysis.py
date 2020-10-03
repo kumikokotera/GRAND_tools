@@ -320,7 +320,8 @@ def make_ev_select_old(ev_list, layout, primary, ev_select_file):
 
 
 def compute_meanNtrig(stepbins, enerbins, zenbins, ev_select):
-
+    print(ev_select[7] )
+    print(stepbins, enerbins, zenbins )
     meanNtrig_ener = []
     varNtrig_ener = []
 
@@ -334,11 +335,15 @@ def compute_meanNtrig(stepbins, enerbins, zenbins, ev_select):
         
             #for izen in range(0, len(zenbins)-1):
             for izen, zen in enumerate(zenbins):
-                ind = np.where((ev_select[:,1] == ener) * (ev_select[:,2] == step)
-                    * (np.abs(ev_select[:,3]-(180-zen)) < 0.5) * (ev_select[:,0] > 0))
+                ind = np.where(
+                    (np.abs( (ev_select[:,1] - ener) )< 1e-3) * 
+                    (ev_select[:,2] == step) *
+                    (np.abs(ev_select[:,3]-(180-zen)) < 0.5) # *
+                    #(ev_select[:,0] > 0)
+                )
                     #* (A_rect[:,3] == 180-zen)* (A_rect[:,0] > 0))
                     #* (A_rect[:,3] >= zenbins[izen]) * (A_rect[:,3] < zenbins[izen+1]))
-                #print(ind)
+                print(ind)
                 if (len(ind[0]) == 0):
                     meanNtrig_zen.append(0)
                     varNtrig_zen.append(0)   
@@ -460,7 +465,8 @@ def plot_Ntrig_fixedernergy_vszenith(
     enerbins,
     zenbins,
     layout="rect",
-    plot_path='./'
+    plot_path='./', 
+    primary="Proton"
 ):
     """
     # plot Ntriggered antennas vs zenith angles for fixed energies 
@@ -483,12 +489,12 @@ def plot_Ntrig_fixedernergy_vszenith(
         plt.yscale('log')
         plt.ylabel('N triggered antennas')
         plt.xlabel('zenith [deg]')
-        plt.title('Proton, %s, E = %4.3f EeV'%(layout, ener))
+        plt.title('%s, %s, E = %4.3f EeV'%(primary,layout, ener))
         plt.legend(loc=2)
         plt.ylim(1,225)
         plt.xlim(45,90)
         #plt.show()
-        plt.savefig(os.path.join(plot_path, 'Ntrig_vs_zen_E%4.3f_%s_Proton.png'%(ener, layout)))
+        plt.savefig(os.path.join(plot_path, 'Ntrig_vs_zen_E%4.3f_%s_%s.png'%(ener, layout, primary)))
 
 
 def plot_rate_fixedsteps_vsenergy(
