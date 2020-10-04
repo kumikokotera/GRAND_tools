@@ -5,146 +5,60 @@ import json
 from grid_shape import diff_spec as diff_spec
 from grid_shape import grids as grids
 from grid_shape import utils_analysis as ua
- 
+import layout
 
 ### Commented analysis script
 
 path = "/Users/benoitl/Documents/GRAND/Data_grids/20200918/"
 
-plot_path = os.path.join(path, "plots")  # This is the directory where the plots will be saved
-events_data_dir = os.path.join(path, "events") # This is the directory where "event" will be saved
-
-os.makedirs(plot_path, exist_ok=True)
-os.makedirs(events_data_dir, exist_ok=True)
 
 threshold = 30 # trigger threshold for individual antennas in muV
 n_trig_thres = 5 # number of triggered antennas required to trigger an event
  
-
-merged_file_dir = path
-config_json_file = os.path.join(merged_file_dir, 'merge_config.json')
-
-with open(config_json_file) as f:
-    config_merged = json.load(f)    ## read the merge config file. In this example it will not be used
-
-
+ 
 ### "Creating" the layout
 pos, offset = grids.create_grid_univ("trihex", 125, do_prune=False, input_n_ring=10)
 
 ## Creating the pruned layout
 pos2, offset2, mask2 = grids.create_grid_univ("trihex", 125, do_prune=True, input_n_ring=10)
 
-## plot on the fly the pruned layout (i.e. plot is not saved)
-plt.figure()
-plt.scatter(pos2[0], pos2[1], c = mask2[:,0], s=1)
+mask  = mask2 + True
 
-
-trihex_steps = config_merged["layouts"]["trihex"]  ## here it is only 125, but can return a list of steps
-
-grid_shape = "trihex"
-
-## Create ev_select with pruning.
-## The ev_select is the selection of the events that match the threshold and n_trig_thres criteria
-## so the next line create an numpy array with:
-# - the number of triggered antenna (yes if Ep2p_tot > threshold),
-# - the energy of the event,
-# - the step
-# - the zenith
-# - and if the event triggers (number of triggred antenna > n_trig_thres )
-[
-    ua.create_ev_select(
-        events_data_dir,
-        merged_file_dir,
-        grid_shape,
-        "Gamma",
-        step, 
-        threshold,
-        n_trig_thres,
-        prune_layout=("simple", mask2)
-    )
-    for step in trihex_steps
-]
+lay1 = layout.Layout(path, pos, mask, "all", threshold, n_trig_thres)
+lay2 = layout.Layout(path, pos2, mask2, "simple", threshold, n_trig_thres)
 
 
 
-## Create ev_select without pruning 
-[
-    ua.create_ev_select(
-        events_data_dir,
-        merged_file_dir,
-        grid_shape,
-        "Gamma",
-        step, 
-        threshold,
-        n_trig_thres,
-    )
-    for step in trihex_steps
-]
-
-
-## This load the previously created arrays
-ev_select_trihex_pruning = [
-    ua.get_ev_select(
-        events_data_dir,
-        "trihex",
-        "Gamma",
-        step,
-        threshold,
-        n_trig_thres,
-        prune_layout=("simple", mask2)
-    )
-    for step in trihex_steps
-]
-ev_select_trihex_pruning= np.concatenate([*ev_select_trihex_pruning])  
 
 
 
-ev_select_trihex_nopruning = [
-    ua.get_ev_select(
-        events_data_dir,
-        "trihex",
-        "Gamma",
-        step,
-        threshold,
-        n_trig_thres
-    )
-    for step in trihex_steps
-]
-ev_select_trihex_nopruning= np.concatenate([*ev_select_trihex_nopruning])  
+
+
 
 
 ##  plot showing the histogram of number of triggered antenna accross the events.
 plt.figure()
-plt.hist(ev_select_trihex_nopruning[:,0], bins = 500, range=[0, 1200], label = 'No pruning')
-plt.hist(ev_select_trihex_pruning[:,0], bins = 500, range=[0, 1200], alpha=0.5, label = 'pruning')
+plt.hist(lay1.ev_select[:,0], bins = 500, range=[0, 1200], label = 'No pruning')
+plt.hist(lay2.ev_select[:,0], bins = 500, range=[0, 1200], alpha=0.5, label = 'pruning')
 plt.ylabel("# of event")
 plt.xlabel('Num_triggered')
 plt.legend(loc=0)
 
+###################################################################################
+####################### Part in which the various rates are computed ##############
+###################################################################################
 
 
 
-layout = "trihex"
 
-# calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
-enerbins = np.unique(ev_select[:,1])
-#zenbins = 180-np.unique(A_rect[:,3])
-zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47, 113.58,120,132])
-zenbins = 180. - zenbins
-#zenbins = [94,100,105,110,120,131]
-stepbins = np.unique(ev_select[:,2])
 
+# calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins
 meanNtrig_ener1, varNtrig_ener1 = ua.compute_meanNtrig(
     stepbins,
     enerbins,
     zenbins,
     ev_select_trihex_nopruning
 )
-
-
-
-
-
 
 
 # trigger rate calculation over full array
@@ -163,7 +77,6 @@ cenr = cen - 0.25
 thetal = np.arccos(1.0/cenl) * 180/np.pi
 thetar = np.arccos(1.0/cenr) * 180/np.pi
 
-
 # delta_omega = - (zenbins[1:] - zenbins[:-1])
 # delta_omega = np.insert(delta_omega, 0, delta_omega[0])
 
@@ -181,11 +94,9 @@ Ntrig2_ener_hexhex1 = ua.compute_trig_rate(
     ev_select_trihex_nopruning
 )
 
-
 rate_hexhex1 = Ntrig2_ener_hexhex1.copy() * 0
 
 rate_hexhex1_area = Ntrig2_ener_hexhex1.copy() * 0
-
 
 for iener, ener in enumerate(enerbins):
     for istep, step in enumerate(stepbins):

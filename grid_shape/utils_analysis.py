@@ -120,7 +120,6 @@ def make_ev_list(path):
             print("Event #{} done".format(count))
     return ev_list
 
-
 def get_info_from_merged_filename(merged_file):
     bn = os.path.basename(merged_file)
     bn = os.path.splitext(bn)[0]
@@ -164,8 +163,6 @@ def make_ev_list_from_merged_file(merged_file, prune_layout=()):
             )
             
     return ev_list
-
-
 
 
 def create_ev_select_from_config_merged(
@@ -341,9 +338,7 @@ def compute_meanNtrig(stepbins, enerbins, zenbins, ev_select):
                     (np.abs(ev_select[:,3]-(180-zen)) < 0.5) # *
                     #(ev_select[:,0] > 0)
                 )
-                    #* (A_rect[:,3] == 180-zen)* (A_rect[:,0] > 0))
-                    #* (A_rect[:,3] >= zenbins[izen]) * (A_rect[:,3] < zenbins[izen+1]))
-                print(ind)
+                
                 if (len(ind[0]) == 0):
                     meanNtrig_zen.append(0)
                     varNtrig_zen.append(0)   
@@ -376,8 +371,7 @@ def compute_trig_rate(stepbins, enerbins, zenbins, ev_select):
             for izen, zen in enumerate(zenbins):
                 ind = np.where((ev_select[:,1] == ener) * (ev_select[:,2] == step) 
                     *(np.abs(ev_select[:,3]-(180-zen)) < 0.5))
-                    #* (A_rect[:,3] == 180-zen))
-                    #* (A_rect[:,3] >= zenbins[izen]) * (A_rect[:,3] < zenbins[izen+1]))
+    
                 if len(ind[0])==0:
                     Ntrig2_zen.append(0)
                 else:
