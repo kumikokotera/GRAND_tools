@@ -3,6 +3,8 @@ import os
 import json
 import matplotlib.pyplot as plt
 
+from grid_shape import grids as grids
+
 '''
 Definition of class to read the simulation output files
 and of event selection routines 
@@ -194,15 +196,76 @@ def create_ev_select_from_config_merged(
                 )
 
 
+def make_sanity_plots(ev_list, grid_shape, step, sanity_plots_dir, input_n_ring=10):
+
+    pos0, offset0 = grids.create_grid_univ(grid_shape, step, do_prune=False, input_n_ring=input_n_ring)
+
+    offx = []
+    offy = []
+    angles = []
+
+    for evv in ev_list:
+        offx.append(evv.random_core0)
+        offy.append(evv.random_core1)
+        angles.append(evv.random_azimuth)
+
+    offx = np.array(offx)
+    offy = np.array(offy)
+    angles = np.array(angles)
+    plt.figure() 
+    plt.clf()
+    plt.hist2d(offx, offy, bins=30)
+    plt.savefig(os.path.join(sanity_plots_dir, "offset_distribution.png"))
+
+    plt.figure()
+    plt.clf()
+    plt.hist(angles, bins=30)
+    plt.savefig(os.path.join(sanity_plots_dir, "azimuth_distribution.png"))
+
+    n_ev = len(ev_list)
+    dum = np.arange(n_ev)
+    np.random.shuffle(dum)
+    for i in dum[0:30]:
+        k = i
+        ev = ev_list[k]
+
+        pos, offset = grids.create_grid_univ(grid_shape, step, do_prune=False, input_n_ring=input_n_ring, angle=ev.random_azimuth)
+        off0 = ev.random_core0 
+        off1 = ev.random_core1 
+
+
+        x = off0
+        y = off1
+        theta = ev.random_azimuth / 180 * np.pi
+        xp = x * np.cos(theta) - y * np.sin(theta)
+        yp = x * np.sin(theta) + y * np.cos(theta)
+
+        plt.figure()
+        plt.title("%d, used for interp"%k)
+        plt.scatter(pos[0]-xp, pos[1]-yp, c=ev.p2ptot)
+        plt.axis('equal')
+        plt.colorbar()
+        plt.savefig(os.path.join(sanity_plots_dir, "rotated_grid_%d.png"%k))
+        plt.figure()
+        plt.title("%d"%k)
+        plt.scatter(pos0[0], pos0[1], c=ev.p2ptot)
+        plt.axis('equal')
+        plt.colorbar()
+        plt.savefig(os.path.join(sanity_plots_dir, "unrotated_grid_%d.png"%k))
+
+
+
 def create_ev_select(
     events_data_dir,
     merged_file_dir,
+    sanity_plots_dir,
     grid_shape,
     primary,
     step,
     threshold,
     n_trig_thres,
-    prune_layout=()
+    prune_layout=(), 
+    input_n_ring=10
 ):
     
     # ev_select_name is e.g. ev_select_hexhex_Proton_250_30.0000_5_.npy
@@ -234,7 +297,9 @@ def create_ev_select(
         print('creating ev_select_file for {} {} {}'.format(grid_shape, primary, step))
         merged_file = os.path.join(merged_file_dir, '%s_%s_%s.json'%(primary, grid_shape, step))
         ev_list = make_ev_list_from_merged_file(merged_file, prune_layout)
-        
+        if prune_layout == "all":
+            make_sanity_plots(ev_list, grid_shape, np.float32(step), sanity_plots_dir, input_n_ring=input_n_ring)
+
         for ev in ev_list:
             if "voltage" in ev.name:
                 ev.num_triggered = sum(ev.is_triggered1(threshold))

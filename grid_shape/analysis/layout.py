@@ -20,10 +20,11 @@ class Layout:
         self.n_trig_thres = n_trig_thres
         self.plot_path = os.path.join(path, "plots")  # This is the directory where the plots will be saved
         self.events_data_dir = os.path.join(path, "events") # This is the directory where "event" will be saved
-
+        self.sanity_plots_dir = os.path.join(self.plot_path, "sanity_plots")
 
         os.makedirs(self.plot_path, exist_ok=True)
         os.makedirs(self.events_data_dir, exist_ok=True)
+        os.makedirs(self.sanity_plots_dir, exist_ok=True)
 
         self.merged_file_dir = self.path
         self.config_json_file = os.path.join(self.merged_file_dir, 'merge_config.json')
@@ -48,12 +49,14 @@ class Layout:
             ua.create_ev_select(
                 self.events_data_dir,
                 self.merged_file_dir,
+                self.sanity_plots_dir,
                 grid_shape,
                 "Gamma",
                 step, 
                 self.threshold,
                 self.n_trig_thres,
-                prune_layout=(self.mask_name, self.mask)
+                prune_layout=(self.mask_name, self.mask), 
+                input_n_ring=10
             )
             for step in trihex_steps
         ]
