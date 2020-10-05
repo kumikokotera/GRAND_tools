@@ -215,11 +215,17 @@ def make_sanity_plots(ev_list, grid_shape, step, sanity_plots_dir, input_n_ring=
     plt.figure() 
     plt.clf()
     plt.hist2d(offx, offy, bins=30)
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
+    plt.title('Distribution of shower core positions')
     plt.savefig(os.path.join(sanity_plots_dir, "offset_distribution.png"))
 
     plt.figure()
     plt.clf()
     plt.hist(angles, bins=30)
+    plt.xlabel('Azimuth rotation angle [deg]')
+    plt.ylabel('N')
+    plt.title('Distribution of random azimuth rotation angles')
     plt.savefig(os.path.join(sanity_plots_dir, "azimuth_distribution.png"))
 
     n_ev = len(ev_list)
@@ -241,12 +247,17 @@ def make_sanity_plots(ev_list, grid_shape, step, sanity_plots_dir, input_n_ring=
         yp = x * np.sin(theta) + y * np.cos(theta)
 
         plt.figure()
+        plt.xlabel('x [m]')
+        plt.ylabel('y [m]') 
         plt.title("%d, used for interp"%k)
         plt.scatter(pos[0]-xp, pos[1]-yp, c=ev.p2ptot)
         plt.axis('equal')
         plt.colorbar()
         plt.savefig(os.path.join(sanity_plots_dir, "rotated_grid_%d.png"%k))
+        
         plt.figure()
+        plt.xlabel('x [m]')
+        plt.ylabel('y [m]') 
         plt.title("%d"%k)
         plt.scatter(pos0[0], pos0[1], c=ev.p2ptot)
         plt.axis('equal')
@@ -297,7 +308,7 @@ def create_ev_select(
         print('creating ev_select_file for {} {} {}'.format(grid_shape, primary, step))
         merged_file = os.path.join(merged_file_dir, '%s_%s_%s.json'%(primary, grid_shape, step))
         ev_list = make_ev_list_from_merged_file(merged_file, prune_layout)
-        if prune_layout == "all":
+        if prune_layout[0] == "all":
             make_sanity_plots(ev_list, grid_shape, np.float32(step), sanity_plots_dir, input_n_ring=input_n_ring)
 
         for ev in ev_list:

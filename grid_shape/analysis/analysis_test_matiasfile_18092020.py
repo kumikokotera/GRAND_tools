@@ -9,7 +9,8 @@ import layout
 
 ### Commented analysis script
 
-path = "/Users/benoitl/Documents/GRAND/Data_grids/20200918/"
+#path = "/Users/benoitl/Documents/GRAND/Data_grids/20200918/"
+path = "/Users/kotera/BROQUE/Data_GRAND/Matias/Trihex"
 
 
 threshold = 30 # trigger threshold for individual antennas in muV
