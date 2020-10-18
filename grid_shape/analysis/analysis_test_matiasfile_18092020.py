@@ -5,12 +5,12 @@ import json
 from grid_shape import diff_spec as diff_spec
 from grid_shape import grids as grids
 from grid_shape import utils_analysis as ua
-import layout
+import layout as layout
 
 ### Commented analysis script
 
-#path = "/Users/benoitl/Documents/GRAND/Data_grids/20200918/"
-path = "/Users/kotera/BROQUE/Data_GRAND/Matias/Trihex"
+path = "/Users/benoitl/Documents/GRAND/Data_grids/20200918/"
+#path = "/Users/kotera/BROQUE/Data_GRAND/Matias/Trihex"
 
 
 threshold = 30 # trigger threshold for individual antennas in muV
@@ -32,11 +32,6 @@ lay2 = layout.Layout(path, pos2, mask2, "simple", threshold, n_trig_thres)
 
 
 
-
-
-
-
-
 ##  plot showing the histogram of number of triggered antenna accross the events.
 plt.figure()
 plt.hist(lay1.ev_select[:,0], bins = 500, range=[0, 1200], label = 'No pruning')
@@ -45,10 +40,22 @@ plt.ylabel("# of event")
 plt.xlabel('Num_triggered')
 plt.legend(loc=0)
 
+
+
+
+
 ###################################################################################
 ####################### Part in which the various rates are computed ##############
 ###################################################################################
 
+
+# calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
+enerbins = np.unique(ev_select[:,1])
+#zenbins = 180-np.unique(A_rect[:,3])
+zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47, 113.58,120,132])
+zenbins = 180. - zenbins
+#zenbins = [94,100,105,110,120,131]
+stepbins = np.unique(ev_select[:,2])
 
 
 
