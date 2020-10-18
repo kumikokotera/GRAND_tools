@@ -29,6 +29,7 @@ class Layout:
         self.merged_file_dir = self.path
         self.config_json_file = os.path.join(self.merged_file_dir, 'merge_config.json')
 
+
         with open(self.config_json_file) as f:
             self.config_merged = json.load(f)    ## read the merge config file. In this example it will not be used
 
@@ -75,6 +76,19 @@ class Layout:
             for step in trihex_steps
         ]
         self.ev_select = np.concatenate([*ev_select])  
+
+        self.compute_energy_bins()
+
+    def compute_energy_bins(self,
+        low_energy=16,
+        high_energy=19,
+        delta_log10=0.1
+    ):
+
+        self.energy_bins = 10**(
+            np.arange(low_energy, high_energy, delta_log10) - delta_log10/2 
+        ) / 1e18
+        self.delta_energy = self.energy_bins[1:] - self.energy_bins[:-1]
 
 
 

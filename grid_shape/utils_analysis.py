@@ -431,6 +431,7 @@ def make_ev_select_old(ev_list, layout, primary, ev_select_file):
 
 
 def compute_meanNtrig(stepbins, enerbins, zenbins, ev_select):
+
     print(ev_select[7] )
     print(stepbins, enerbins, zenbins )
     meanNtrig_ener = []
