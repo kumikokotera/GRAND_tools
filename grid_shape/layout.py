@@ -51,7 +51,7 @@ class Layout:
                 self.merged_file_dir,
                 self.sanity_plots_dir,
                 grid_shape,
-                "Gamma",
+                "Proton",
                 step, 
                 self.threshold,
                 self.n_trig_thres,
@@ -66,7 +66,7 @@ class Layout:
             ua.get_ev_select(
                 self.events_data_dir,
                 "trihex",
-                "Gamma",
+                "Proton",
                 step,
                 self.threshold,
                 self.n_trig_thres,

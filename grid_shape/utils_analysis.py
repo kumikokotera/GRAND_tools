@@ -2,7 +2,7 @@ import numpy as np
 import os
 import json
 import matplotlib.pyplot as plt
-
+import ijson
 from grid_shape import grids as grids
 
 '''
@@ -134,7 +134,44 @@ def make_ev_list_from_merged_file(merged_file, prune_layout=()):
     count = 0
 
     primary, grid_shape, step = get_info_from_merged_filename(merged_file)
+    # The following uses ijson as json can't load large files
+    with open(merged_file) as f:
+        data = ijson.kvitems(f, "", use_float=True, multiple_values=True)
+        for k, v in data:
+            subdir = k
+            if "ef" in v:
+                name = subdir + ".Interpolated." + "%s_%s_efield.P2Pdat"%(grid_shape, step) 
+                ev_list.append(
+                    Event(
+                        v["ef_showerinfo"],
+                        v["ef"],
+                        step, 
+                        name,
+                        prune_layout
+                    )
+                )
+            
+            if "vo" in v: 
+                name = subdir + ".Interpolated." + "%s_%s_voltage.P2Pdat"%(grid_shape, step) 
+                ev_list.append(
+                    Event(
+                        v["vo_showerinfo"],
+                        v["vo"],
+                        step,
+                        name,
+                        prune_layout
+                    )
+                )
+            
+    return ev_list
 
+
+def make_ev_list_from_merged_file_json(merged_file, prune_layout=()):
+    ev_list = []
+    count = 0
+
+    primary, grid_shape, step = get_info_from_merged_filename(merged_file)
+   
     with open(merged_file) as f:
         data = json.load(f)
 
@@ -196,7 +233,7 @@ def create_ev_select_from_config_merged(
                 )
 
 
-def make_sanity_plots(ev_list, grid_shape, step, sanity_plots_dir, input_n_ring=10):
+def make_sanity_plots(ev_list, grid_shape, step, primary, sanity_plots_dir, input_n_ring=10):
 
     pos0, offset0 = grids.create_grid_univ(grid_shape, step, do_prune=False, input_n_ring=input_n_ring)
 
@@ -218,7 +255,8 @@ def make_sanity_plots(ev_list, grid_shape, step, sanity_plots_dir, input_n_ring=
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.title('Distribution of shower core positions')
-    plt.savefig(os.path.join(sanity_plots_dir, "offset_distribution.png"))
+    plt.colorbar()
+    plt.savefig(os.path.join(sanity_plots_dir, "offset_distribution_{}_{}_{}.png".format(grid_shape, step, primary)))
 
     plt.figure()
     plt.clf()
@@ -226,7 +264,7 @@ def make_sanity_plots(ev_list, grid_shape, step, sanity_plots_dir, input_n_ring=
     plt.xlabel('Azimuth rotation angle [deg]')
     plt.ylabel('N')
     plt.title('Distribution of random azimuth rotation angles')
-    plt.savefig(os.path.join(sanity_plots_dir, "azimuth_distribution.png"))
+    plt.savefig(os.path.join(sanity_plots_dir, "azimuth_distribution_{}_{}_{}.png".format(grid_shape, step, primary)))
 
     n_ev = len(ev_list)
     dum = np.arange(n_ev)
@@ -309,7 +347,7 @@ def create_ev_select(
         merged_file = os.path.join(merged_file_dir, '%s_%s_%s.json'%(primary, grid_shape, step))
         ev_list = make_ev_list_from_merged_file(merged_file, prune_layout)
         if prune_layout[0] == "all":
-            make_sanity_plots(ev_list, grid_shape, np.float32(step), sanity_plots_dir, input_n_ring=input_n_ring)
+            make_sanity_plots(ev_list, grid_shape, np.float32(step), primary, sanity_plots_dir, input_n_ring=input_n_ring)
 
         for ev in ev_list:
             if "voltage" in ev.name:
