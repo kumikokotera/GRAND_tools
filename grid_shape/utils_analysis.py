@@ -77,7 +77,7 @@ class Event:
         self.jobname = A[0]
         self.primary = A[1]
         self.energy = np.float32(A[2])
-        self.zenith = np.float32(A[3])
+        self.zenith = 180 - np.float32(A[3])  # CONVERSION TO REAL ZENITH ANGLE
         self.azimuth = np.float32(A[4])
         self.xmax_distance = np.float32(A[5])
         self.slant_xmax = np.float32(A[6])
@@ -430,46 +430,70 @@ def make_ev_select_old(ev_list, layout, primary, ev_select_file):
     return ev_select
 
 
-def compute_meanNtrig(stepbins, enerbins, zenbins, ev_select):
+def compute_meanNtrig(enerbins, zenbins, ev_select):
+    """
+    compute the mean of variance of number of triggered antennas
+    in various energy and zenith bins
 
-    print(ev_select[7] )
-    print(stepbins, enerbins, zenbins )
+    """
+    print(ev_select[7])
+    print(enerbins, zenbins)
+    
+    n_energy_bins = len(enerbins)
+    n_zenith_bins = len(zenbins)
+
+    mean_n_trig = np.zeros((n_energy_bins-1, n_zenith_bins-1))
+    var_n_trig = np.zeros((n_energy_bins-1, n_zenith_bins-1))
+   
     meanNtrig_ener = []
     varNtrig_ener = []
 
-    for istep, step in enumerate(stepbins):
-        meanNtrig_step = []
-        varNtrig_step = []
 
-        for iener, ener in enumerate(enerbins):
-            meanNtrig_zen = []
-            varNtrig_zen = []
+    for i_ener in range(n_energy_bins-1):
+        for i_zen in range(n_zenith_bins-1):
+            ind = np.where(
+                (ev_select[:,1] > enerbins[i_ener]) * 
+                (ev_select[:,1] < enerbins[i_ener+1]) *
+                (ev_select[:,3] > zenbins[i_zen]) *
+                (ev_select[:,3] < zenbins[i_zen+1])
+            )
+
+            mean_n_trig[i_ener, i_zen] = np.mean(ev_select[ind[0],0])
+            var_n_trig[i_ener, i_zen] = np.var(ev_select[ind[0],0])
+    
+    return mean_n_trig, var_n_trig
+
+    
+    # for iener, ener in enumerate(enerbins):
+    #     meanNtrig_zen = []
+    #     varNtrig_zen = []
         
-            #for izen in range(0, len(zenbins)-1):
-            for izen, zen in enumerate(zenbins):
-                ind = np.where(
-                    (np.abs( (ev_select[:,1] - ener) )< 1e-3) * 
-                    (ev_select[:,2] == step) *
-                    (np.abs(ev_select[:,3]-(180-zen)) < 0.5) # *
-                    #(ev_select[:,0] > 0)
-                )
+    #     #for izen in range(0, len(zenbins)-1):
+    #     for izen, zen in enumerate(zenbins):
+    #         ind = np.where(
+    #             (np.abs( (ev_select[:,1] - ener) )< 1e-3) * 
+
+
+    #             (np.abs(ev_select[:,3]-(180-zen)) < 0.5) # *
+    #             #(ev_select[:,0] > 0)
+    #         )
                 
-                if (len(ind[0]) == 0):
-                    meanNtrig_zen.append(0)
-                    varNtrig_zen.append(0)   
-                else:
-                    meanNtrig_zen.append(np.mean(ev_select[ind[0],0]))
-                    varNtrig_zen.append(np.var(ev_select[ind[0],0]))
+    #             if (len(ind[0]) == 0):
+    #                 meanNtrig_zen.append(0)
+    #                 varNtrig_zen.append(0)   
+    #             else:
+    #                 meanNtrig_zen.append(np.mean(ev_select[ind[0],0]))
+    #                 varNtrig_zen.append(np.var(ev_select[ind[0],0]))
 
-            meanNtrig_step.append(meanNtrig_zen)
-            varNtrig_step.append(varNtrig_zen)
+    #         meanNtrig_step.append(meanNtrig_zen)
+    #         varNtrig_step.append(varNtrig_zen)
 
-        meanNtrig_ener.append(meanNtrig_step)
-        varNtrig_ener.append(varNtrig_step)
+    #     meanNtrig_ener.append(meanNtrig_step)
+    #     varNtrig_ener.append(varNtrig_step)
 
-    meanNtrig_ener = np.array(meanNtrig_ener)
-    varNtrig_ener = np.array(varNtrig_ener)
-    return meanNtrig_ener, varNtrig_ener
+    # meanNtrig_ener = np.array(meanNtrig_ener)
+    # varNtrig_ener = np.array(varNtrig_ener)
+    # return meanNtrig_ener, varNtrig_ener
 
 
 def compute_trig_rate(stepbins, enerbins, zenbins, ev_select):
@@ -500,10 +524,9 @@ def compute_trig_rate(stepbins, enerbins, zenbins, ev_select):
     return Ntrig2_ener
 
 
-def plot_Ntrig_fixedsteps_vsenergy(
+def plot_Ntrig(
     meanNtrig_ener,
     varNtrig_ener,
-    stepbins,
     enerbins,
     zenbins,
     layout="rect"
@@ -511,10 +534,8 @@ def plot_Ntrig_fixedsteps_vsenergy(
     """
     plot Ntriggered antennas vs energies for fixed steps
     """
-    for istep, step in enumerate(stepbins):
-        plt.figure(istep) 
-        plt.clf()
-        for izen in range(0, len(zenbins)-1):
+    
+    for izen in range(0, len(zenbins)-1):
             plt.errorbar(
                 enerbins,
                 meanNtrig_ener[istep,:,izen],

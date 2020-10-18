@@ -5,7 +5,7 @@ import json
 from grid_shape import diff_spec as diff_spec
 from grid_shape import grids as grids
 from grid_shape import utils_analysis as ua
-import layout as layout
+from grid_shape import layout as layout
 
 ### Commented analysis script
 
@@ -50,7 +50,7 @@ plt.legend(loc=0)
 
 
 # calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
-enerbins = np.unique(ev_select[:,1])
+#######    enerbins = np.unique(ev_select[:,1])
 #zenbins = 180-np.unique(A_rect[:,3])
 zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47, 113.58,120,132])
 zenbins = 180. - zenbins
@@ -72,10 +72,10 @@ meanNtrig_ener1, varNtrig_ener1 = ua.compute_meanNtrig(
 # trigger rate calculation over full array
 # convolving with measured CR flux
 
-log_E_eV = np.log10(enerbins*1.e18) -0.05
-log_E_eV = np.append(log_E_eV, log_E_eV[-1]+0.05)
-enerbins2 = 10**(log_E_eV) / 1e18 # in EeV
-delta_E = enerbins2[1:] - enerbins2[:-1]
+# log_E_eV = np.log10(enerbins*1.e18) -0.05
+# log_E_eV = np.append(log_E_eV, log_E_eV[-1]+0.1)
+# enerbins2 = 10**(log_E_eV) / 1e18 # in EeV
+# delta_E = enerbins2[1:] - enerbins2[:-1]
 
 
 cen = 1.0/np.cos(zenbins*np.pi/180)
@@ -90,6 +90,8 @@ thetar = np.arccos(1.0/cenr) * 180/np.pi
 
 delta_theta = thetal - thetar
 delta_omega = 2*np.pi * delta_theta *np.pi/180 * np.sin(np.pi/2 - zenbins*np.pi/180)
+
+
 
 area_hexhex = stepbins**2 *3*np.sqrt(3)/2 * 91
 area_trihex = stepbins**2 *np.sqrt(3)/4 * 61 * 6
