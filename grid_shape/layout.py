@@ -86,10 +86,13 @@ class Layout:
         delta_log10 = 0.1
     ):
 
-        self.energy_bins  =  10**(
-            np.arange(low_energy, high_energy, delta_log10) - delta_log10/2 
+        dum_e = np.arange(low_energy, high_energy+delta_log10/10, delta_log10) 
+        self.energy_bins_limits  =  10**(
+            dum_e - delta_log10/2 
         ) / 1e18
-        self.delta_energy  =  self.energy_bins[1:] - self.energy_bins[:-1]
+
+        self.energy_bins_centers =  10**(dum_e[0:-1])/1e18
+        self.delta_energy  =  self.energy_bins_limits[1:] - self.energy_bins_limits[:-1]
 
     def compute_zenith_bins(self):
 
@@ -97,7 +100,7 @@ class Layout:
         min_theta = np.rad2deg(np.arccos(1.0/1.162))
         sec_theta_min = 1.0/np.cos(np.deg2rad(min_theta))
         sec_theta_max = 1.0/np.cos(np.deg2rad(max_theta))
-        n_zenith_bins = 16
+        n_zenith_bins = 8
         print("nbins:"+str(n_zenith_bins))
         print("max theta:"+str(max_theta)+" -> " + str(sec_theta_max))
         print("min theta:"+str(min_theta)+" -> " + str(sec_theta_min))
@@ -117,10 +120,10 @@ class Layout:
         print("log_limits:" + str(limits_log_secant_bins))
         center_log_secant_bins = limits_log_secant_bins[0:n_zenith_bins]*np.power(10,log_increment/2)
         print("log centers:"+ str(center_log_secant_bins))
-        self.limits_zenith_bins = np.rad2deg(np.arccos(1.0/limits_log_secant_bins))
-        print("limits:" + str(self.limits_zenith_bins))
-        self.center_zenith_bins = np.rad2deg(np.arccos(1.0/center_log_secant_bins))
-        print("centers:" + str(self.center_zenith_bins))
+        self.zenith_bins_limits = np.rad2deg(np.arccos(1.0/limits_log_secant_bins))
+        print("limits:" + str(self.zenith_bins_limits))
+        self.zenith_bins_centers = np.rad2deg(np.arccos(1.0/center_log_secant_bins))
+        print("centers:" + str(self.zenith_bins_centers))
        
 
     def plot_layout(self, fig = 1):

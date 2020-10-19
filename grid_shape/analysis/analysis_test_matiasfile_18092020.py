@@ -52,21 +52,56 @@ plt.legend(loc=0)
 # calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins 
 #######    enerbins = np.unique(ev_select[:,1])
 #zenbins = 180-np.unique(A_rect[:,3])
-zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47, 113.58,120,132])
-zenbins = 180. - zenbins
-#zenbins = [94,100,105,110,120,131]
-stepbins = np.unique(ev_select[:,2])
+# zenbins = np.array([94.77,95.74,97.18,98.21,99.59,101.54, 104.48, 106.6, 109.47, 113.58,120,132])
+# zenbins = 180. - zenbins
+# #zenbins = [94,100,105,110,120,131]
+# stepbins = np.unique(ev_select[:,2])
 
 
+m, v = ua.compute_meanNtrig(
+    lay1.energy_bins_limits,
+    lay1.zenith_bins_limits,
+    lay1.ev_select
+)
 
 
 # calculate mean and variance of triggered antenna numbers in each zenith angle and energy bins
-meanNtrig_ener1, varNtrig_ener1 = ua.compute_meanNtrig(
-    stepbins,
-    enerbins,
-    zenbins,
-    ev_select_trihex_nopruning
+ua.plot_meanNtrig(
+    m,
+    v,
+    lay1.energy_bins_limits,
+    lay1.energy_bins_centers,
+    lay1.zenith_bins_limits,
+    lay1.zenith_bins_centers,
+    layout=lay1.mask_name 
 )
+
+
+trig_rate = ua.compute_trig_rate(
+    lay1.energy_bins_limits,
+    lay1.zenith_bins_limits,
+    lay1.ev_select
+)
+
+
+ua.plot_trigrate(
+    trig_rate,
+    lay1.energy_bins_limits,
+    lay1.energy_bins_centers,
+    lay1.zenith_bins_limits,
+    lay1.zenith_bins_centers,
+    layout=lay1.mask_name 
+)
+
+
+
+# meanNtrig_ener1, varNtrig_ener1 = ua.compute_meanNtrig(
+#     stepbins,
+#     enerbins,
+#     zenbins,
+#     ev_select_trihex_nopruning
+# )
+
 
 
 # trigger rate calculation over full array
