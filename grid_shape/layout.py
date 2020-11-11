@@ -222,7 +222,8 @@ class Layout:
                         self.trig_rate[i_ener,i_zen] * 
                         diff_spec.tale_diff_flux(ener*1e18) * 
                         self.delta_energy[i_ener] *1e18 * self.delta_omega[i_zen] *
-                        self.area * np.cos(zen*np.pi/180) / self.area*1e6 # !! finally we divide by the area here
+                        self.area * np.cos(np.pi/2-zen*np.pi/180) / self.area*1e6 *
+                        3600 * 24 # !! finally we divide by the area here
                     )
         self.detection_rate = detection_rate
 
