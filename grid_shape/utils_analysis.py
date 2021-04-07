@@ -240,15 +240,24 @@ def make_sanity_plots(ev_list, grid_shape, step, primary, sanity_plots_dir, inpu
     offx = []
     offy = []
     angles = []
-
+    energies = []
+    zeniths = []
+    
     for evv in ev_list:
         offx.append(evv.random_core0)
         offy.append(evv.random_core1)
         angles.append(evv.random_azimuth)
+        energies.append(evv.energy)
+        zeniths.append(evv.zenith)
+        
 
     offx = np.array(offx)
     offy = np.array(offy)
     angles = np.array(angles)
+    energies = np.array(energies)
+    zeniths  = np.array(energies)
+    
+
     plt.figure() 
     plt.clf()
     plt.hist2d(offx, offy, bins=30)
@@ -287,7 +296,17 @@ def make_sanity_plots(ev_list, grid_shape, step, primary, sanity_plots_dir, inpu
         plt.figure()
         plt.xlabel('x [m]')
         plt.ylabel('y [m]') 
-        plt.title("%d, used for interp"%k)
+        plt.title(
+            "%2.2f, %2.2f, %2.2f, %2.2f, %2.2f, %2.2f"%(
+                k,
+                ev.random_core0,
+                ev.random_core1,
+                ev.random_azimuth,
+                ev.zenith,
+                ev.energy
+            ),
+            fontdict={"fontsize":10}
+        )
         plt.scatter(pos[0]-xp, pos[1]-yp, c=ev.p2ptot)
         plt.axis('equal')
         plt.colorbar()
@@ -296,7 +315,18 @@ def make_sanity_plots(ev_list, grid_shape, step, primary, sanity_plots_dir, inpu
         plt.figure()
         plt.xlabel('x [m]')
         plt.ylabel('y [m]') 
-        plt.title("%d"%k)
+        #plt.title("%d"%k)
+        plt.title(
+            "%2.2f, %2.2f, %2.2f, %2.2f, %2.2f, %2.2f"%(
+                k,
+                ev.random_core0,
+                ev.random_core1,
+                ev.random_azimuth,
+                ev.zenith,
+                ev.energy
+            ),
+            fontdict={"fontsize":10}
+        )
         plt.scatter(pos0[0], pos0[1], c=ev.p2ptot)
         plt.axis('equal')
         plt.colorbar()
@@ -345,13 +375,14 @@ def create_ev_select(
         print('creating ev_select_file for {} {} {}'.format(grid_shape, primary, step))
         merged_file = os.path.join(merged_file_dir, '%s_%s_%s.json'%(primary, grid_shape, step))
         ev_list = make_ev_list_from_merged_file(merged_file, prune_layout)
-        if prune_layout[0] == "all":
-            make_sanity_plots(ev_list, grid_shape, np.float32(step), primary, sanity_plots_dir, input_n_ring=input_n_ring)
-
+        
         for ev in ev_list:
             if "voltage" in ev.name:
                 ev.num_triggered = sum(ev.is_triggered1(threshold))
                 ev.is_triggered2 = (ev.num_triggered > n_trig_thres)
+        
+        if prune_layout[0] == "all":
+            make_sanity_plots(ev_list, grid_shape, np.float32(step), primary, sanity_plots_dir, input_n_ring=input_n_ring)
 
         ev_select = [
             (
@@ -360,8 +391,11 @@ def create_ev_select(
                 ev.step,
                 ev.zenith,
                 ev.is_triggered2,
-                ev.azimuth
-            ) for  ev in ev_list
+                ev.azimuth,
+                ev.random_core0, ##add
+                ev.random_core1, ##add
+                ev.random_azimuth ##add
+            ) for ev in ev_list
         if "voltage" in ev.name
         ]
 

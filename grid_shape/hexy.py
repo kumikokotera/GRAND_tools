@@ -32,6 +32,11 @@ def get_corners(centers, radius):
     ]).transpose(1,2,0)
 
 
+def get_nb_hexagons(n_ring):
+    a = get_spiral(np.array((0,0,0)),0, n_ring)
+    return(len(a))
+
+    
 def is_inside_hex(pos, radius):
     
     pos = np.abs(pos)

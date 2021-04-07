@@ -63,7 +63,7 @@ def create_grid_univ(
     DISPLAY=False,
     directory=None,
     do_prune=False, 
-    input_n_ring = None
+    input_n_ring = -1
 ):
     '''
     generate new positions of antennas with universal layout
@@ -137,7 +137,7 @@ def create_grid_univ(
     if GridShape == 'hexhex':
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout...')
-        if input_n_ring:  
+        if input_n_ring != -1:  
             n_ring = input_n_ring
         else:
             n_ring = 5  # number of hex rings corresponding to 216/150 antennas (n_ring=5/4)
@@ -153,7 +153,7 @@ def create_grid_univ(
     if GridShape == 'trihex':
         # create a triangular grid with overall hexagonal layout: use a hexagonal grid and add the central point in each cell
         logging.debug('create_grid:Generating triangular grid in overall hexagonal layout...')
-        if input_n_ring:  
+        if input_n_ring != -1:
             n_ring = input_n_ring
         else:
             n_ring = 4 # number of hex rings corresponding to 211 antennas (n_ring=4)
@@ -169,7 +169,7 @@ def create_grid_univ(
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout with random displacements...')
 
-        if input_n_ring:  
+        if input_n_ring != -1:  
             n_ring = input_n_ring
         else:
             n_ring = 4 # number of hex rings corresponding to 216/150 antennas (n_ring=5/4)

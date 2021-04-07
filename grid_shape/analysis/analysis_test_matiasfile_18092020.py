@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.colors import LogNorm
 import numpy as np
 import os
 import json
@@ -17,9 +18,11 @@ MYC = ['0','0.20','0.4','0.6','0.8']
 ### Commented analysis script
 
 path = "/Users/benoitl/Documents/GRAND/Data_grids/20200918/"
+plot_path = '/Users/benoitl/Documents/GRAND/Data_grids/20200918/plots'
+os.makedirs(plot_path, exist_ok=True)
 #path = "/Users/kotera/BROQUE/Data_GRAND/Matias/Trihex"
-
-
+primary = "Proton"
+input_n_ring = 10
 threshold = 30 # trigger threshold for individual antennas in muV
 n_trig_thres = 5 # number of triggered antennas required to trigger an event
  
@@ -34,24 +37,24 @@ pos2, offset2, mask2 = grids.create_grid_univ("trihex", 125, do_prune=True, inpu
 mask  = masks.make_all_mask(input_n_ring=10)
 
 
-lay1 = layout.Layout(path, pos, mask, "all", threshold, n_trig_thres)
-lay2 = layout.Layout(path, pos2, mask2, "simple", threshold, n_trig_thres)
+lay1 = layout.Layout(path, pos, mask, "all", threshold, n_trig_thres, input_n_ring, primary)
+lay2 = layout.Layout(path, pos2, mask2, "simple", threshold, n_trig_thres, input_n_ring, primary)
 
 # creating a random mask with only 5% of the n_ring=10 antennas kept
 mask_rand_5 = masks.make_mask_random(input_n_ring=10, n_keep_ratio=0.05)
 
 # creating the layout associated with this mask
-lay_rand_5 = layout.Layout(path, pos, mask_rand_5, "rand_5", threshold, n_trig_thres)
+lay_rand_5 = layout.Layout(path, pos, mask_rand_5, "rand_5", threshold, n_trig_thres, input_n_ring, primary)
 
 # creating the trihex 250 grid out of the trixhex 125
 mask_tri250 = masks.make_trihex_new_out_of_125(pos, 250, 10) 
-lay_tri250 = layout.Layout(path, pos, mask_tri250, "tri250", threshold, n_trig_thres)
+lay_tri250 = layout.Layout(path, pos, mask_tri250, "tri250", threshold, n_trig_thres, input_n_ring, primary)
 
 lay_tri250.plot_layout()
 
 # creating the trihex 500 grid out of the trixhex 125
 mask_tri500 = masks.make_trihex_new_out_of_125(pos, 500, 10) 
-lay_tri500 = layout.Layout(path, pos, mask_tri500, "tri500", threshold, n_trig_thres)
+lay_tri500 = layout.Layout(path, pos, mask_tri500, "tri500", threshold, n_trig_thres, input_n_ring, primary)
 
 lay_tri500.plot_layout()
 
@@ -59,10 +62,43 @@ lay_tri500.plot_layout()
 
 # creating the trihex 500 grid out of the trixhex 125
 mask_tri1000 = masks.make_trihex_new_out_of_125(pos, 1000, 10) 
-lay_tri1000 = layout.Layout(path, pos, mask_tri1000, "tri1000", threshold, n_trig_thres)
+lay_tri1000 = layout.Layout(path, pos, mask_tri1000, "tri1000", threshold, n_trig_thres, input_n_ring, primary)
 
 lay_tri1000.plot_layout()
 
+
+mask_island1 = masks.make_centralisland_out_of_125(pos, 10) 
+lay_island1 = layout.Layout(path, pos, mask_island1, "island1", threshold, n_trig_thres, input_n_ring, primary)
+
+lay_island1.plot_layout()
+
+
+
+mask_island2 = masks.make_centralisland_out_of_125_v2(pos, 10) 
+lay_island2 = layout.Layout(path, pos, mask_island2, "island2", threshold, n_trig_thres, input_n_ring, primary)
+
+lay_island2.plot_layout()
+
+
+
+mini_island_mask = masks.make_mini_island()
+lay_mini_island = layout.Layout(
+    path,
+    pos,
+    mini_island_mask,
+    "mini_island",
+    threshold, n_trig_thres, input_n_ring, primary
+)
+
+
+mini_island2_mask = masks.make_mini_island2()
+lay_mini_island2 = layout.Layout(
+    path,
+    pos,
+    mini_island2_mask,
+    "mini_island2",
+    threshold, n_trig_thres, input_n_ring, primary
+)
 
 
 
@@ -72,7 +108,7 @@ lay_tri1000.plot_layout()
 plt.figure(3, figsize=(8,6))
 plt.clf()
 n_zenith_bins = len(lay1.zenith_bins_centers)
-n_bins_to_plot = 4
+n_bins_to_plot = 6
 i_bins = [(i) * n_zenith_bins // (n_bins_to_plot+1) for i in range(n_bins_to_plot)]
 #i_bins = [0, 1, 2, 3, 4]
 for k, i_bin in enumerate(i_bins):
@@ -89,7 +125,7 @@ for k, i_bin in enumerate(i_bins):
     )
     plt.errorbar(
         np.log10(lay1.energy_bins_centers*1e18),
-        lay_rand_5.detection_rate[:,i_bin],
+        lay_island1.detection_rate[:,i_bin],
         fmt=SYM_LIST[i_bin],
         capsize=2,
         alpha=0.7,
@@ -100,7 +136,7 @@ for k, i_bin in enumerate(i_bins):
     )
     plt.errorbar(
         np.log10(lay1.energy_bins_centers*1e18),
-        lay_tri250.detection_rate[:,i_bin],
+        lay_mini_island2.detection_rate[:,i_bin],
         fmt=SYM_LIST[i_bin],
         capsize=2,
         alpha=0.7,
@@ -146,11 +182,11 @@ custom_lines = [
     Line2D([0], [0], color="C5", lw=4)
 ]
 
-legend2 = plt.legend(custom_lines, ['trihex all', 'random 5%',"trihex 250", "trihex500", "trihex1000"], loc=3)
+legend2 = plt.legend(custom_lines, ['trihex all', 'island 1',"mini island2", "trihex500", "trihex1000"], loc=3)
 
 plt.gca().add_artist(legend1)
 plt.gca().add_artist(legend2)
-
+plt.savefig(os.path.join(lay1.plot_path, "detection_rate_vs_energy.png"))
 
 
 
@@ -178,8 +214,8 @@ for k, i_bin in enumerate(i_bins):
         )
     )
     plt.errorbar(
-        lay_rand_5.zenith_bins_centers,
-        lay_rand_5.detection_rate[i_bin,:],
+        lay1.zenith_bins_centers,
+        lay_island1.detection_rate[i_bin,:],
         fmt=SYM_LIST[i_bin],
         capsize=2,
         alpha=0.7,
@@ -188,8 +224,8 @@ for k, i_bin in enumerate(i_bins):
         color="C2"
         )
     plt.errorbar(
-        lay_tri250.zenith_bins_centers,
-        lay_tri250.detection_rate[i_bin,:],
+        lay_mini_island2.zenith_bins_centers,
+        lay_mini_island2.detection_rate[i_bin,:],
         fmt=SYM_LIST[i_bin],
         capsize=2,
         alpha=0.7,
@@ -234,13 +270,130 @@ custom_lines = [
     Line2D([0], [0], color="C5", lw=4)
 ]
 
-legend2 = plt.legend(custom_lines, ['trihex all', 'random 5%',"trihex 250", "trihex500", "trihex1000"], loc=3)
+legend2 = plt.legend(custom_lines, ['trihex all', 'island1',"mini island2", "trihex500", "trihex1000"], loc=3)
 
 plt.gca().add_artist(legend1)
 plt.gca().add_artist(legend2)
+plt.savefig(os.path.join(lay1.plot_path, "detection_rate_vs_zenith.png"))
+
+
+plt.figure(45)
+lay1.plot_layout()
+plt.savefig(os.path.join(lay1.plot_path, "lay1.png"))
 
 
 
- ## make a trixhex 250 nring =10 lauout
+plt.figure(46)
+lay_rand_5.plot_layout(fig=46)
+plt.savefig(os.path.join(lay1.plot_path, "lay_rand_5.png"))
 
+
+plt.figure(47)
+lay_tri250.plot_layout(fig=47)
+plt.savefig(os.path.join(lay1.plot_path, "lay_tri250.png"))
+
+
+plt.figure(48)
+lay_tri500.plot_layout(fig=48)
+plt.savefig(os.path.join(lay1.plot_path, "lay_tri500.png"))
+
+
+
+plt.figure(49)
+lay_tri1000.plot_layout(fig=49)
+plt.savefig(os.path.join(lay1.plot_path, "lay_tri1000.png"))
+
+
+plt.figure(50)
+lay_island1.plot_layout(fig=50)
+plt.savefig(os.path.join(lay1.plot_path, "lay_island1.png"))
+
+
+plt.figure(51)
+lay_island2.plot_layout(fig=51)
+plt.savefig(os.path.join(lay1.plot_path, "lay_island2.png"))
+
+
+plt.figure(52)
+lay_mini_island.plot_layout(fig=51)
+plt.savefig(os.path.join(lay1.plot_path, "lay_mini_island.png"))
+
+
+plt.figure(53)
+lay_mini_island2.plot_layout(fig=53)
+plt.savefig(os.path.join(lay1.plot_path, "lay_mini_island2.png"))
+
+
+
+
+lay1.make_diff_event_rate(200)
+lay_tri1000.make_diff_event_rate(200)
+lay_tri500.make_diff_event_rate(200)
+lay_tri250.make_diff_event_rate(200)
+lay_island1.make_diff_event_rate(200)
+
+lay_mini_island.make_diff_event_rate(200)
+lay_mini_island2.make_diff_event_rate(200)
+
+
+plt.figure(345)
+plt.clf()
+plt.plot(lay1.energy_bins_centers, lay1.integrated_ev_rate_no_trig, label="trig efficiency = 1")
+plt.plot(lay1.energy_bins_centers, lay1.integrated_ev_rate, label="trihex all")
+plt.plot(lay_tri250.energy_bins_centers, lay_tri250.integrated_ev_rate, label="trihex250")
+plt.plot(lay_tri500.energy_bins_centers, lay_tri500.integrated_ev_rate, label="trihex500")
+plt.plot(lay_tri1000.energy_bins_centers, lay_tri1000.integrated_ev_rate, label="trihex1000")
+plt.plot(lay_island1.energy_bins_centers, lay_island1.integrated_ev_rate, label="island1")
+plt.plot(lay_mini_island.energy_bins_centers, lay_mini_island.integrated_ev_rate, label="mini island")
+plt.plot(lay_mini_island2.energy_bins_centers, lay_mini_island2.integrated_ev_rate, label="mini island2")
+
+plt.ylabel('Differential event rate [day'+"$^{-1}$"+"PeV"+"$^{-1}$"+']')
+plt.title('Detector area 200 km'+"$^2$")
+plt.xlabel('Energy [EeV]')
+plt.xscale('log')
+plt.yscale('log')
+plt.legend(loc=0)
+plt.savefig('diff_rate_200km2.png')
+
+
+
+
+####   hist 2d
+
+
+
+
+lay1.plot_2D_detection_rate()
+lay1.plot_2D_differential_rate()
+lay1.plot_mean_n_trig()
+
+
+lay_tri250.plot_2D_detection_rate()
+lay_tri250.plot_2D_differential_rate()
+lay_tri250.plot_mean_n_trig()
+
+
+lay_tri500.plot_2D_detection_rate()
+lay_tri500.plot_2D_differential_rate()
+lay_tri500.plot_mean_n_trig()
+
+
+lay_tri1000.plot_2D_detection_rate()
+lay_tri1000.plot_2D_differential_rate()
+lay_tri1000.plot_mean_n_trig()
+
+
+lay_island1.plot_2D_detection_rate()
+lay_island1.plot_2D_differential_rate()
+lay_island1.plot_mean_n_trig()
+
+
+lay_island2.plot_2D_detection_rate()
+lay_island2.plot_2D_differential_rate()
+lay_island2.plot_mean_n_trig()
+
+
+lay_mini_island2.plot_2D_detection_rate()
+lay_mini_island2.plot_2D_differential_rate()
+lay_mini_island2.plot_mean_n_trig()
 
