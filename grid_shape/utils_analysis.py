@@ -2,6 +2,7 @@ import numpy as np
 import os
 import json
 import matplotlib.pyplot as plt
+import hdf5fileinout as hd
 import ijson
 from grid_shape import grids as grids
 
@@ -66,10 +67,10 @@ class Event:
             self.p2pz = np.array(p2pz)
             self.p2ptot = np.array(p2ptot)
         else:            
-            self.p2px = np.array(p2px)[prune_layout[1][:,0]]
-            self.p2py = np.array(p2py)[prune_layout[1][:,0]]
-            self.p2pz = np.array(p2pz)[prune_layout[1][:,0]]
-            self.p2ptot = np.array(p2ptot)[prune_layout[1][:,0]]
+            self.p2px = np.array(p2px)[prune_layout[1][:, 0]]
+            self.p2py = np.array(p2py)[prune_layout[1][:, 0]]
+            self.p2pz = np.array(p2pz)[prune_layout[1][:, 0]]
+            self.p2ptot = np.array(p2ptot)[prune_layout[1][:, 0]]
         
         # JobName,Primary,Energy,Zenith,Azimuth,XmaxDistance,SlantXmax,RandomCore[0],RandomCore[1],RandomAzimuth,HadronicModel
         A = showerinfo[0]
@@ -102,7 +103,10 @@ class Event:
     def is_triggered1(self, threshold):
         return self.p2ptot > threshold
 
+
 def make_ev_list(path):
+    """ Deprecated? """
+
     ev_list = []
     count = 0
 
@@ -122,11 +126,55 @@ def make_ev_list(path):
             print("Event #{} done".format(count))
     return ev_list
 
+
 def get_info_from_merged_filename(merged_file):
     bn = os.path.basename(merged_file)
     bn = os.path.splitext(bn)[0]
    
     return bn.split('_')
+
+
+def make_ev_list_from_hdf5_files(events_data_dir):
+    files_list = []
+    ev_list = []
+    count = 0
+
+    # list all files 
+    for path, sub, files in os.walk(events_data_dir):
+        [files_list.append(os.path.join(path, f)) for f in files if os.path.splitext(f)[-1] == '.hdf5' ]
+    import time
+    t0 = time.time()
+    for f in files_list:
+        count += 1
+        print(count)
+        run_info = hd.GetRunInfo(f)
+        event_name = run_info["EventName"][0]
+        #print(event_name)
+        event_info = hd.GetEventInfo(f, event_name)
+        #print(event_info)
+        rand_azimuth = os.path.splitext(os.path.basename(f))[0].split('_')[-1]
+        # JobName,Primary,Energy,Zenith,Azimuth,XmaxDistance,SlantXmax,RandomCore[0],RandomCore[1],RandomAzimuth,HadronicModel
+        info_string = "{},{},{},{},{},{},{},{},{},{},{}".format(
+            event_name,
+            event_info["Primary"],
+            event_info["Energy"],
+            event_info["Zenith"],
+            event_info["Azimuth"],
+            event_info["XmaxDistance"],
+            event_info["SlantXmax"],
+            event_info["CorePosition"][0][0],
+            event_info["CorePosition"][0][1],
+            rand_azimuth,
+            run_info["HadronicModel"][0]
+        )
+        antenna_info = hd.GetAntennaP2PInfo(f, event_name[0])
+        antenna_id = antenna_info["ID"]
+        antenna_p2px = antenna_info[""]
+
+        shower_data = 
+
+    print(time.time() - t0)
+    return files_list
 
 
 def make_ev_list_from_merged_file(merged_file, prune_layout=()):
@@ -167,6 +215,9 @@ def make_ev_list_from_merged_file(merged_file, prune_layout=()):
 
 
 def make_ev_list_from_merged_file_json(merged_file, prune_layout=()):
+    """
+    Deprecated?
+    """
     ev_list = []
     count = 0
 
@@ -343,7 +394,8 @@ def create_ev_select(
     threshold,
     n_trig_thres,
     prune_layout=(), 
-    input_n_ring=10
+    input_n_ring=10, 
+    hdf5=False
 ):
     
     # ev_select_name is e.g. ev_select_hexhex_Proton_250_30.0000_5_.npy
@@ -373,9 +425,11 @@ def create_ev_select(
 
     if do_make_ev_list:
         print('creating ev_select_file for {} {} {}'.format(grid_shape, primary, step))
-        merged_file = os.path.join(merged_file_dir, '%s_%s_%s.json'%(primary, grid_shape, step))
-        ev_list = make_ev_list_from_merged_file(merged_file, prune_layout)
-        
+        if not(hdf5):
+            merged_file = os.path.join(merged_file_dir, '%s_%s_%s.json'%(primary, grid_shape, step))
+            ev_list = make_ev_list_from_merged_file(merged_file, prune_layout)
+        else:
+            ev_list = make_ev_list_from_hdf5_files()
         for ev in ev_list:
             if "voltage" in ev.name:
                 ev.num_triggered = sum(ev.is_triggered1(threshold))

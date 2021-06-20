@@ -193,7 +193,7 @@ def create_grid_univ(
     z_pos_new = x_pos_new*0 + z_site
 
     # create new position array
-    new_pos = np.stack((x_pos_new,y_pos_new,z_pos_new), axis=0)
+    new_pos = np.stack((x_pos_new, y_pos_new, z_pos_new), axis=0)
 
 
    # rotate grid of specified angle
