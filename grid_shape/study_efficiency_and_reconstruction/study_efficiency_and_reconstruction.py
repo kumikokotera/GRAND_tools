@@ -28,7 +28,7 @@ TriggerThreshold = 45
 TriggerN = 5
 
 DetectorArea = np.pi*siteradius*siteradius
-print("DetectorArea[km2]",DetectorArea/1E6)
+print("DetectorArea[km2]", DetectorArea/1E6)
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 # Creating List of files
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -91,8 +91,6 @@ plt.title('Histogram of CorePosition_z')
 plt.xlabel('z [km]')
 plt.ylabel('# events')
 plt.savefig(os.path.join(plot_path, 'df_CorePosition_z.png'))
-
-
 
 plt.figure(241)
 plt.clf()
@@ -175,7 +173,7 @@ for label, gd in grouped:
         continue
  # 
     print("Bin Events:", Events, "(", 100*Events/loopcount, "% of all events)")
-    Undetectable.append(gd[gd["NAntennas"]  == -5]["NAntennas"].count())
+    Undetectable.append(gd[gd["NAntennas"] == -5]["NAntennas"].count())
     print("of wich Undetectable (toolow):",Undetectable[-1],"(",100*Undetectable[-1]/Events,"%)")
     Undetected.append(gd[gd["NAntennas"]  == -4]["NAntennas"].count())
     UndetectionChance.append((Undetectable[-1]+Undetected[-1])/Events)
@@ -248,7 +246,6 @@ for label, gd in grouped:
     if(SumCheck!= TotalEvents[-1]):
         print("WARNING SOMETHING DOES NOT ADD UP, CHECK THIS")
     
-
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## # 
 # making the Bining for the pcolormesh plots
 Labels = np.array(Labels) # wq have a 0,0 group that i will ignore
@@ -268,7 +265,7 @@ LowEdgeLogSecZeniths = LogSecZeniths[1:]+DeltaLogSecZeniths
 LowEdgeLogSecZeniths = np.append(LowEdgeLogSecZeniths,LogSecZeniths[-1]-DeltaLogSecZeniths)
 
 LowEdgeZeniths = np.rad2deg(np.arccos(np.power(10,-LowEdgeLogSecZeniths)))
-SolidAngles = 2*np.pi*np.cos(np.deg2rad(LowEdgeZeniths[1:]))-np.cos(np.deg2rad(LowEdgeZeniths[:-1]))
+SolidAngles = 2 * np.pi*np.cos(np.deg2rad(LowEdgeZeniths[1:]))-np.cos(np.deg2rad(LowEdgeZeniths[:-1]))
 
 X, Y = np.meshgrid(LowEdgeLogEnergies, LowEdgeLogSecZeniths)
 
@@ -353,7 +350,7 @@ PhaseSpacePlot(ax,"Number Undetected",X,Y,Z)
 
 Z1 = np.reshape(Undetectable[0:],(len(EnergyBins)-1,len(ZenithBins)-1))
 Z2 = np.reshape(Undetected[0:],(len(EnergyBins)-1,len(ZenithBins)-1))
-Z = Z1+Z2
+Z = Z1 + Z2
 ax = fig102.add_subplot(223)
 PhaseSpacePlot(ax,"Undetected + Undetectable",X,Y,Z)
 

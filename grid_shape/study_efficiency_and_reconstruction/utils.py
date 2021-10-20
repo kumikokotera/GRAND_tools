@@ -256,7 +256,7 @@ def read_files_and_save_csv(
     # The final probability of detection is the product of the three? only if these probabilities are independent
 
     # Making the pandas dataframe
-    df = pd.DataFrame(np.stack(( EventWeight , NAntennas , NTriggered , Energy , Zenith , Azimuth , PlaneNAntennas , PlaneZenith , PlaneAzimuth , PlaneChiSignif , PlaneChi2 , SphereNAntennas , SphereChiSignif , SphereChi2 , ADFNAntennas , ADFZenith , ADFAzimuth , ADFWidth , ADFAmplitude , ADFChiSignif , ADFChi2 ),axis = 1), 
+    df = pd.DataFrame(np.stack((EventWeight, NAntennas, NTriggered, Energy, Zenith, Azimuth, PlaneNAntennas, PlaneZenith, PlaneAzimuth, PlaneChiSignif, PlaneChi2, SphereNAntennas, SphereChiSignif, SphereChi2, ADFNAntennas, ADFZenith, ADFAzimuth, ADFWidth, ADFAmplitude, ADFChiSignif, ADFChi2), axis=1), 
         columns = ["EventWeight","NAntennas","NTriggered","Energy","Zenith","Azimuth","PlaneNAntennas","PlaneZenith","PlaneAzimuth","PlaneChiSignif","PlaneChi2","SphereNAntennas","SphereChiSignif","SphereChi2","ADFNAntennas","ADFZenith","ADFAzimuth","ADFWidth","ADFAmplitude","ADFChiSignif","ADFChi2"])
 
     
