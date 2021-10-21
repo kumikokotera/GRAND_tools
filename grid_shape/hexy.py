@@ -20,6 +20,15 @@ ALL_DIRECTIONS = np.array([NW, NE, E, SE, SW, W, ])
 Angles_pointy_top = [np.pi/6 + i*np.pi/3 for i in range(0,6) ]
 
 
+def get_area(radius):
+    """
+    computes the area of a hexagon of radius radius.
+    the radius is the distance between the center of the hexagon and one corners
+    and is the same as the distance between two adjacent corners
+    """
+    return 3 * np.sqrt(3)/2 * radius ** 2 
+
+
 def get_corners(centers, radius):
     return np.array(
         [
