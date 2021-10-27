@@ -4,20 +4,13 @@ import os
 import json
 
 from grid_shape_lib.modules import grids as grids
-from import grids as grids
-import utils_analysis as ua
+from grid_shape_lib.modules import hexy as hx
 
-import diff_spec
+from grid_shape_lib.utils import utils_analysis as ua
+from grid_shape_lib.utils import diff_spec
 
-try:
-    from grid_shape import hexy as hx
-except:
-    import hexy as hx
 
 Z_SITE = 2900 # height of GP300 site in km
-
-
-
 
 
 ## contruct all hexes up to n_ring = 4 and center at n=0, none at n=1, 

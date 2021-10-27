@@ -1,9 +1,8 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import os
 
-from grid_shape import grids as grids
-from grid_shape import masks as masks
+from grid_shape_lib.modules import grids as grids
+from grid_shape_lib.modules import masks as masks
 
 
 def plot_mask(mask, nring, plot_suffix):
@@ -21,6 +20,7 @@ def plot_mask(mask, nring, plot_suffix):
     plt.savefig(
         os.path.join("layout_{}.png".format(plot_suffix))
     )
+
 
 nring = 10
 # All mask

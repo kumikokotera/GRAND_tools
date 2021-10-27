@@ -1,26 +1,25 @@
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.colors import LogNorm
-from matplotlib.lines import Line2D
 import numpy as np
 import os
 import json
 
 from grid_shape_lib.utils import diff_spec as diff_spec
+from grid_shape_lib.utils import binning as binning
+
 from grid_shape_lib.modules import grids as grids
 from grid_shape_lib.utils import utils_analysis as ua
- 
-font = {'family' : 'normal',
-        'size'   : 12}
+
+font = {'family': 'normal',
+        'size': 12}
 matplotlib.rc('font', **font)
 
-#matplotlib.rc('xtick', labelsize=15) 
-#matplotlib.rc('ytick', labelsize=15) 
+# matplotlib.rc('xtick', labelsize=15)
+# matplotlib.rc('ytick', labelsize=15)
 
-
-
-SYM_LIST = ['.','o','v','*','s','.','o','v','*','s','.','o','v','*','s','.','o','v','*','s','.','o','v','*','s','.','o','v','*','s','.','o','v','*','s']
-MYC = ['0','0.20','0.4','0.6','0.8']
+SYM_LIST = 5 * ['.', 'o', 'v', '*', 's']
+MYC = ['0', '0.20', '0.4', '0.6', '0.8']
 
 
 class Layout:
@@ -33,28 +32,29 @@ class Layout:
         threshold,
         n_trig_thres,
         input_n_ring,
-        primary="Proton"):
+        primary="Proton"
+    ):
 
         # "Creating" the layout
-        #pos, _  =  grids.create_grid_univ("trihex", 125, do_prune = False, input_n_ring = 10)
-        self.pos  =  pos
-        self.mask  =  mask
-        self.mask_name  =  mask_name
-        self.path  =  path
-        self.threshold  =  threshold
-        self.n_trig_thres  =  n_trig_thres
-        self.plot_path  =  os.path.join(path, "plots")  # This is the directory where the plots will be saved
-        self.events_data_dir  =  os.path.join(path, "events") # This is the directory where "event" will be saved
-        self.sanity_plots_dir  =  os.path.join(self.plot_path, "sanity_plots")
+        # pos, _ = grids.create_grid_univ("trihex", 125, do_prune = False, input_n_ring = 10)
+        self.pos = pos
+        self.mask = mask
+        self.mask_name = mask_name
+        self.path = path
+        self.threshold = threshold
+        self.n_trig_thres = n_trig_thres
+        self.plot_path = os.path.join(path, "plots")  # This is the directory where the plots will be saved
+        self.events_data_dir = os.path.join(path, "events")  # This is the directory where "event" will be saved
+        self.sanity_plots_dir = os.path.join(self.plot_path, "sanity_plots")
         self.primary = primary
 
         self.plot_suffix = "{}_{}_{}_{}".format(self.mask_name, self.primary, self.threshold, self.n_trig_thres)
-        os.makedirs(self.plot_path, exist_ok = True)
-        os.makedirs(self.events_data_dir, exist_ok = True)
-        os.makedirs(self.sanity_plots_dir, exist_ok = True)
+        os.makedirs(self.plot_path, exist_ok=True)
+        os.makedirs(self.events_data_dir, exist_ok=True)
+        os.makedirs(self.sanity_plots_dir, exist_ok=True)
 
-        self.merged_file_dir  =  self.path
-        self.config_json_file  =  os.path.join(self.merged_file_dir, 'merge_config.json')
+        self.merged_file_dir = self.path
+        self.config_json_file = os.path.join(self.merged_file_dir, 'merge_config.json')
 
         self.xmin = pos[0].min()
         self.xmax = pos[0].max()
@@ -63,12 +63,11 @@ class Layout:
         self.ymax = pos[1].max()
 
         with open(self.config_json_file) as f:
-            self.config_merged  =  json.load(f)    ## read the merge config file. In this example it will not be used
+            self.config_merged = json.load(f)    ## read the merge config file. In this example it will not be used
 
-
-        trihex_steps  =  self.config_merged["layouts"]["trihex"] ## here it is only 125, but can return a list of steps
+        trihex_steps = self.config_merged["layouts"]["trihex"] ## here it is only 125, but can return a list of steps
         
-        grid_shape  =  "trihex"
+        grid_shape = "trihex"
         self.input_n_ring = input_n_ring
         self.nb_hex = grids.hx.get_nb_hexagons(self.input_n_ring)
         self.area = np.int32(trihex_steps[0])**2 *3*np.sqrt(3)/2 * self.nb_hex  ## only valid for n_ring = 10
@@ -91,14 +90,14 @@ class Layout:
                 step, 
                 self.threshold,
                 self.n_trig_thres,
-                prune_layout = (self.mask_name, self.mask), 
-                input_n_ring = input_n_ring
+                prune_layout=(self.mask_name, self.mask),
+                input_n_ring=input_n_ring
             )
             for step in trihex_steps
         ]
 
         ## This load the previously created arrays
-        ev_select =  [
+        ev_select = [
             ua.get_ev_select(
                 self.events_data_dir,
                 "trihex",
@@ -106,19 +105,19 @@ class Layout:
                 step,
                 self.threshold,
                 self.n_trig_thres,
-                prune_layout = (self.mask_name, self.mask)
+                prune_layout=(self.mask_name, self.mask)
             )
             for step in trihex_steps
         ]
-        self.ev_select  =  np.concatenate([*ev_select])  
+        self.ev_select = np.concatenate([*ev_select])
 
         self.compute_energy_bins()
         self.compute_zenith_bins()
-   
+
         self.delta_theta = self.zenith_bins_limits[1:] - \
             self.zenith_bins_limits[:-1]
 
-        #self.delta_omega = 2*np.pi * self.delta_theta *np.pi/180 *\
+        # self.delta_omega = 2*np.pi * self.delta_theta *np.pi/180 *\
         #    np.sin(np.pi/2 - self.zenith_bins_centers*np.pi/180)
 
         self.delta_omega = 2 * np.pi * (
@@ -127,63 +126,39 @@ class Layout:
 
         self.compute_trig_efficiency()
         self.compute_detection_rate()
-         
 
-    def compute_energy_bins(self,
-        low_energy = 16.3,
-        high_energy = 18.7,
-        delta_log10 = 0.1
+    def compute_energy_bins(
+        self,
+        low_energy=16.3,
+        high_energy=18.7,
+        delta_log10=0.1
     ):
+        ebl, ebc, de = binning.compute_energy_bins(low_energy, high_energy, delta_log10)
 
-        dum_e = np.arange(low_energy, high_energy+delta_log10/10, delta_log10) 
-        self.energy_bins_limits  =  10**(
-            dum_e - delta_log10/2 
-        ) / 1e18
-
-        self.energy_bins_centers =  10**(dum_e[0:-1])/1e18
-        self.delta_energy  =  self.energy_bins_limits[1:] - self.energy_bins_limits[:-1]
+        self.energy_bins_limits = ebl
+        self.energy_bins_centers = ebc
+        self.delta_energy = de
 
     def compute_zenith_bins(self):
 
-        max_theta = np.rad2deg(np.arccos(1.0/21.54))
-        min_theta = np.rad2deg(np.arccos(1.0/1.162))
-        sec_theta_min = 1.0/np.cos(np.deg2rad(min_theta))
-        sec_theta_max = 1.0/np.cos(np.deg2rad(max_theta))
-        n_zenith_bins = 16
-        #print("nbins:"+str(n_zenith_bins))
-        #print("max theta:"+str(max_theta)+" -> " + str(sec_theta_max))
-        #print("min theta:"+str(min_theta)+" -> " + str(sec_theta_min))
-        log_sec_theta_min = np.log10(sec_theta_min)
-        log_sec_theta_max = np.log10(sec_theta_max)
-        log_increment = (log_sec_theta_max-log_sec_theta_min)/n_zenith_bins
-        #print("On log spacing")
-        #print("max log_sec_theta:"+str(max_theta)+" -> " + str(log_sec_theta_max))
-        #print("min log_sec_theta:"+str(min_theta)+" -> " + str(log_sec_theta_min))
-        #print("log increment is sec theta:"+str(log_increment)+" a factor " + str(np.power(10,log_increment)))
-        limits_log_secant_bins = np.logspace(
-            log_sec_theta_min,
-            log_sec_theta_max,
-            n_zenith_bins+1,
-            base=10
+        zbl, zbc = binning.compute_zenith_bins(
+            sec_theta_min=1.162,
+            sec_theta_max=21.54,
+            n_zenith_bins=16
         )
-        #print("log_limits:" + str(limits_log_secant_bins))
-        center_log_secant_bins = limits_log_secant_bins[0:n_zenith_bins]*np.power(10,log_increment/2)
-        #print("log centers:"+ str(center_log_secant_bins))
-        self.zenith_bins_limits = np.rad2deg(np.arccos(1.0/limits_log_secant_bins))
-        #print("limits:" + str(self.zenith_bins_limits))
-        self.zenith_bins_centers = np.rad2deg(np.arccos(1.0/center_log_secant_bins))
-        #print("centers:" + str(self.zenith_bins_centers))
-       
 
-    def plot_layout(self, fig = 1):
-        ## plot on the fly the pruned layout (i.e. plot is not saved)
+        self.zenith_bins_limits = zbl
+        self.zenith_bins_centers = zbc
+
+    def plot_layout(self, fig=1):
+        # plot on the fly the pruned layout (i.e. plot is not saved)
         plt.figure(fig, figsize=(8, 6))
         plt.clf()
         plt.scatter(
             self.pos[0],
             self.pos[1],
-            c = 1-self.mask[:,0],
-            s = 3
+            c=1-self.mask[:,0],
+            s=3
         )
         plt.xlabel('x [m]')
         plt.ylabel('y [m]')

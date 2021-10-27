@@ -4,7 +4,7 @@ import json
 import matplotlib.pyplot as plt
 from interpolation_functions import hdf5fileinout as hd
 import ijson
-from grid_shape_lib import grids as grids
+from grid_shape_lib.modules import grids as grids
 
 '''
 Definition of class to read the simulation output files
