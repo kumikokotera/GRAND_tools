@@ -99,6 +99,7 @@ def make_spiral_mask_with_minipose(a, b, ntheta, shape = "hexhex"):
     mask2 = prune_pos(posfine, new_pos)
     return mask2
 
+
 def make_spiral_mask(a, b):
 
     theta = np.arange(0, 50)/50 *4*np.pi
@@ -200,6 +201,7 @@ def make_spiral_mask(a, b):
         s = 3
     )
     return mask2
+
 
 def make_all_mask(input_n_ring = 5):
     pos, _  = grids.create_grid_univ(
@@ -526,9 +528,6 @@ def make_central_island_out_of_fine(
 
     mask_new = prune_pos(pos_fine, pos_to_trim)
     return mask_new 
-
-
-
 
 
 def make_centralisland_out_of_125(pos_125, input_n_ring):
