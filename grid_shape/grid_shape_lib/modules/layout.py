@@ -5,9 +5,10 @@ from matplotlib.lines import Line2D
 import numpy as np
 import os
 import json
-from grid_shape import diff_spec as diff_spec
-from grid_shape import grids as grids
-from grid_shape import utils_analysis as ua
+
+from grid_shape_lib.utils import diff_spec as diff_spec
+from grid_shape_lib.modules import grids as grids
+from grid_shape_lib.utils import utils_analysis as ua
  
 font = {'family' : 'normal',
         'size'   : 12}

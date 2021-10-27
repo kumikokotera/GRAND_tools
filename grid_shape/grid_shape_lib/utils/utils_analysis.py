@@ -2,13 +2,13 @@ import numpy as np
 import os
 import json
 import matplotlib.pyplot as plt
-import hdf5fileinout as hd
+from interpolation_functions import hdf5fileinout as hd
 import ijson
-from grid_shape import grids as grids
+from grid_shape_lib import grids as grids
 
 '''
 Definition of class to read the simulation output files
-and of event selection routines 
+and of event selection routines
 to perform simulation output analysis in the analysis.py routine
 '''
 
@@ -16,10 +16,8 @@ SYM_LIST = ['.','o','v','*','s','.','o','v','*','s','.','o','v','*','s','.','o',
 MYC = ['0','0.20','0.4','0.6','0.8']
 
 
-
-
 class Event_old:
-    def __init__(self,f1,f2, step, name):
+    def __init__(self, f1, f2, step, name):
         p2px, p2py, p2pz, p2ptot = np.loadtxt(f1)
         self.p2px = p2px
         self.p2py = p2py
@@ -171,7 +169,7 @@ def make_ev_list_from_hdf5_files(events_data_dir):
         antenna_id = antenna_info["ID"]
         antenna_p2px = antenna_info[""]
 
-        shower_data = 
+        #ßshower_data = 
 
     print(time.time() - t0)
     return files_list

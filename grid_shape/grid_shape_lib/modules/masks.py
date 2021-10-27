@@ -1,6 +1,7 @@
 import numpy as np
-from grid_shape import grids as grids
 import matplotlib.pyplot as plt
+
+from grid_shape_lib.modules import grids as grids
 
 
 def get_spiral(a, b, theta):

@@ -1,11 +1,10 @@
-
-
-
 import numpy as np
-import grids as grids
 import matplotlib.pyplot as plt
 import os
 import json
+
+from grid_shape_lib.modules import grids as grids
+from import grids as grids
 import utils_analysis as ua
 
 import diff_spec

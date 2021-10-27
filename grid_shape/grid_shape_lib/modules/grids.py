@@ -1,19 +1,13 @@
 from __future__ import absolute_import
 import numpy as np
-import astropy.units as u
 import logging
-import os
 import sys
-import inspect
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import cm
 
-try:
-    from grid_shape import hexy as hx
-except:
-    import hexy as hx
+from grid_shape_lib.modules import hexy as hx
 
 Z_SITE = 1086 # height of GP300 site in km
+
 
 def remove_redundant_point(grid_x, grid_y, **kwargs):
     x_pos_flat_fl = grid_x
@@ -28,10 +22,10 @@ def remove_redundant_point(grid_x, grid_y, **kwargs):
 
     else:
         return x_pos_new, y_pos_new
-   
-    
+
+
 def get_hexarray(n_ring, radius, do_mask=False):
-    radius_grid = (1 + n_ring *1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
+    radius_grid = (1 + n_ring * 1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
     xcube = hx.get_spiral(np.array((0,0,0)), 0, n_ring)
     xpix = hx.cube_to_pixel(xcube, radius) # centers of the hexagons
     xcorn = hx.get_corners(xpix, radius) # corners of the hexagons
