@@ -157,7 +157,7 @@ class Layout:
         plt.scatter(
             self.pos[0],
             self.pos[1],
-            c=1-self.mask[:,0],
+            c=1-self.mask[:, 0],
             s=3
         )
         plt.xlabel('x [m]')
@@ -167,7 +167,7 @@ class Layout:
             os.path.join(self.plot_path, "layout_{}.png".format(self.plot_suffix))
         )
 
-    def plot_2d_efficiency(self, n_ener, n_zen, color = 'C0'):
+    def plot_2d_efficiency(self, n_ener, n_zen, color='C0'):
         n_energy_bins = len(self.energy_bins_limits) - 1
         n_zenith_bins = len(self.zenith_bins_limits) - 1
 
