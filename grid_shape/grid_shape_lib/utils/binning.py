@@ -1,4 +1,4 @@
-import nunmpy as np
+import numpy as np
 
 
 def compute_energy_bins(

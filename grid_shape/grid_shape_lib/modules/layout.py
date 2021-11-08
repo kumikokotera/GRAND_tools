@@ -122,7 +122,7 @@ class Layout:
 
         self.delta_omega = 2 * np.pi * (
             np.cos(np.pi/180*self.zenith_bins_limits[:-1]) - np.cos(np.pi/180*self.zenith_bins_limits[1:])
-        ) 
+        )
 
         self.compute_trig_efficiency()
         self.compute_detection_rate()
