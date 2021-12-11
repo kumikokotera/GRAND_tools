@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from grid_shape_lib.modules import grids as grids
+from grid_shape_lib.modules import hexy as hx
 
 
 def get_spiral(a, b, theta):
@@ -10,13 +11,13 @@ def get_spiral(a, b, theta):
     return np.array([x,y])
 
 
-def get_closest_antenna(x,y, pos):
-    d = np.sqrt((pos[0, :]-x)**2 + (pos[1,:]-y)**2)
+def get_closest_antenna(x, y, pos):
+    d = np.sqrt((pos[0, :]-x)**2 + (pos[1, :]-y)**2)
     return np.argmin(d)
 
 
-def make_spiral_mask_with_minipose(a, b, ntheta, shape = "hexhex"):
-    theta = np.arange(0, ntheta)/ntheta *4*np.pi
+def make_spiral_mask_with_minipose(a, b, ntheta, shape="hexhex"):
+    theta = np.arange(0, ntheta) / ntheta * 4 * np.pi
     spi1 = get_spiral(a, b, theta)
     spi1[0] -= a
     th = 2*np.pi/3
@@ -30,12 +31,11 @@ def make_spiral_mask_with_minipose(a, b, ntheta, shape = "hexhex"):
     spi2 = np.dot(r, spi1)
     spi3 = np.dot(r, spi2)
 
-
-    pos, _  = grids.create_grid_univ(
+    pos, _ = grids.create_grid_univ(
         "trihex",
         375,
         angle=0,
-        input_n_ring = 25    
+        input_n_ring=25    
     )
 
     posfine, _  = grids.create_grid_univ(
@@ -204,7 +204,7 @@ def make_spiral_mask(a, b):
     return mask2
 
 
-def make_all_mask(input_n_ring = 5):
+def make_all_mask(input_n_ring=5):
     pos, _  = grids.create_grid_univ(
         "trihex",
         1000,
@@ -217,7 +217,7 @@ def make_all_mask(input_n_ring = 5):
     return np.expand_dims(mask3, 1) 
 
 
-def make_mask_random(input_n_ring = 5, n_keep_ratio=0.1):
+def make_mask_random(input_n_ring=5, n_keep_ratio=0.1):
     """keep n_keep_ratio antennas from a trihex grid with size given by
     input_n_ring
     """
@@ -241,20 +241,20 @@ def make_mask_random(input_n_ring = 5, n_keep_ratio=0.1):
 def prune_pos(pos1, pos2):
         """
         create the mask of the commun positions bewtween 
-        pos1 and pos2, mask to be applied to pos1
+        pos1 and pos2, mask to be applied to pos1.
         """
 
         p1 = pos1.transpose()
         p2 = pos2.transpose()
             
-        grid_x = p1[:,0]
-        grid_y = p1[:,1]
+        grid_x = p1[:, 0]
+        grid_y = p1[:, 1]
 
         x_pos_flat_fl = grid_x
         y_pos_flat_fl = grid_y
 
-        grid_x2 = p2[:,0]
-        grid_y2 = p2[:,1]
+        grid_x2 = p2[:, 0]
+        grid_y2 = p2[:, 1]
 
         x_pos_flat_fl2 = grid_x2
         y_pos_flat_fl2 = grid_y2
@@ -272,7 +272,7 @@ def prune_pos(pos1, pos2):
         mask_new = np.zeros(p1.shape[0], dtype=bool) 
         
         for i in range(scal.shape[0]):
-            mask_new[i] = np.any(np.isclose(scal[i], scal2, rtol = 1e-8))
+            mask_new[i] = np.any(np.isclose(scal[i], scal2, rtol=1e-8))
         
         mask_new = np.expand_dims(mask_new, 1)
         return mask_new
@@ -327,7 +327,6 @@ def make_coarse_out_of_fine_trihex_2(
 
     mask_new = prune_pos(pos_fine, pos_coarse)
     return mask_new 
-
 
 
 def make_trihex_new_out_of_125(pos_125, step, input_n_ring):
@@ -576,3 +575,42 @@ def make_centralisland_out_of_125_v2(pos_125, input_n_ring):
     mask_new = prune_pos(pos_125, pstep)
 
     return mask_new
+
+def make_mask_gp13(dense_step, radius, input_n_ring=10):
+
+    pos, _ = grids.create_grid_univ(
+        "trihex",
+        dense_step,
+        do_prune=False,
+        input_n_ring=input_n_ring
+    )
+    #radius = 1000  # [m]
+
+    #radius = 1291.472  # [m]
+
+    area = hx.get_area(radius) * 3
+    cube0 = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, -1],
+            [0, 1, -1],
+        ]
+    )
+
+    pos_13 = hx.cube_to_pixel(cube0, radius)
+ 
+    corners = hx.get_corners(pos_13, radius)
+
+
+    sh = np.array(corners).shape
+    corners = corners.transpose(0, 2, 1)
+    corners = np.array(corners).reshape((sh[0]*sh[2], sh[1]))
+
+    corners_x, corners_y = grids.remove_redundant_point(corners[:, 0], corners[:, 1])
+
+    pos_gp13 = np.array([corners_x, corners_y]).transpose()
+    pos_gp13 = pos_gp13.T
+    print(pos_gp13.shape)
+    print(pos.shape)
+    mask_gp13 = prune_pos(pos, pos_gp13)
+    return mask_gp13

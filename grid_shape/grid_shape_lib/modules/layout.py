@@ -32,7 +32,8 @@ class Layout:
         threshold,
         n_trig_thres,
         input_n_ring,
-        primary="Proton"
+        primary="Proton",
+        plot_path=None
     ):
 
         # "Creating" the layout
@@ -43,7 +44,10 @@ class Layout:
         self.path = path
         self.threshold = threshold
         self.n_trig_thres = n_trig_thres
-        self.plot_path = os.path.join(path, "plots")  # This is the directory where the plots will be saved
+        if not plot_path:
+            self.plot_path = os.path.join(path, "plots")  # This is the directory where the plots will be saved
+        else:
+            self.plot_path = plot_path
         self.events_data_dir = os.path.join(path, "events")  # This is the directory where "event" will be saved
         self.sanity_plots_dir = os.path.join(self.plot_path, "sanity_plots")
         self.primary = primary
@@ -268,10 +272,8 @@ class Layout:
                 ax3.tick_params(labelsize=8)
                 #ax.set_xticks(h_num[1])
                 #ax.set_yticks(h_num[2])
-
-
-#                axs1[i_zen, i_ener].pcolor(h_num[0], vmin=0, vmax=20)
-#                axs2[i_zen, i_ener].pcolor(h_denom[0], vmin=0, vmax=40)
+                #axs1[i_zen, i_ener].pcolor(h_num[0], vmin=0, vmax=20)
+                #axs2[i_zen, i_ener].pcolor(h_denom[0], vmin=0, vmax=40)
                 if i_ener != 0:
                     ax.tick_params(labelleft=False)
                     ax1.tick_params(labelleft=False)
@@ -306,8 +308,6 @@ class Layout:
                         ),
                         fontdict={'fontsize': 'small'}
                     )
-
-
 
                 if i_ener == n_ener - 1:
                     axs_ = ax.twinx()
@@ -372,7 +372,6 @@ class Layout:
             transparent=True
         )
 
-
     def compute_trig_efficiency(self):
         """
         compute the mean of variance of number of triggered antennas
@@ -386,8 +385,6 @@ class Layout:
         mean_n_trig = np.zeros((n_energy_bins, n_zenith_bins))
         var_n_trig = np.zeros((n_energy_bins, n_zenith_bins))
         trig_efficiency = np.zeros((n_energy_bins, n_zenith_bins))
-
-        
 
 
         for i_ener in range(n_energy_bins):
@@ -413,7 +410,6 @@ class Layout:
         self.mean_n_trig = mean_n_trig
         self.var_n_trig = var_n_trig
         self.trig_efficiency = trig_efficiency
-
 
     def compute_detection_rate(self):
         """
@@ -460,7 +456,6 @@ class Layout:
         self.detection_rate_old = detection_rate_old
         self.differential_rate = differential_rate
         
-
     def make_diff_event_rate(self, area_detector, do_plot=False):
         """
         Make the plot of differential event rate in day^-1 PeV^-1
@@ -509,7 +504,6 @@ class Layout:
             plt.xlabel('Enegy [EeV]')
             plt.xscale('log')
             plt.yscale('log')
-
 
     def plot_trig_efficiency(self):
         """
@@ -617,7 +611,6 @@ class Layout:
         plt.title('%s'%(layout))
         plt.legend(loc=0, ncol=2)
 
-
     def plot_2D_differential_rate(self):
 
         fig, ax = plt.subplots()
@@ -648,9 +641,6 @@ class Layout:
         plt.savefig(
             os.path.join(self.plot_path, "diff_ev_rate_{}.png".format(self.plot_suffix))
         )
-
-
-
 
     def plot_2D_trig_efficiency(self):
         fig, ax = plt.subplots()
@@ -684,8 +674,6 @@ class Layout:
             os.path.join(self.plot_path, "trig_efficiency_rate_{}.png".format(self.plot_suffix))
         )
 
-
-
     def plot_2D_detection_rate(self):
         fig, ax = plt.subplots()
         plt.clf()
@@ -693,12 +681,12 @@ class Layout:
             np.log10(1e18*self.energy_bins_limits),
             self.zenith_bins_limits,
             self.detection_rate.T,
-            norm=LogNorm(), vmin=1e-7, vmax=1e2
+            norm=LogNorm(), vmin=1e-4, vmax=1e-1
         )
         x = np.log10(1e18*self.energy_bins_centers)
         y = self.zenith_bins_centers
         xx,yy = np.meshgrid(x,y)
-        levels = [0.01, 0.1, 1, 10]
+        levels = [0.001, 0.01, 0.1,]
         cs2 = plt.contour(xx,yy,
             self.detection_rate.T, levels=levels, colors = 'k'
         )
@@ -714,11 +702,11 @@ class Layout:
 
         cbar = plt.colorbar(CS)
         cbar.ax.set_ylabel('$ [day^{-1} km^{-2}]$')
+        
         plt.savefig(
             os.path.join(self.plot_path, "trig_ev_rate_{}.png".format(self.plot_suffix))
         )
-
-
+        
     def plot_mean_n_trig(self):
         fig, ax = plt.subplots()
         CS = plt.pcolor(
@@ -746,12 +734,12 @@ class Layout:
                 "mean_n_trig_{}.png".format(self.plot_suffix)
             )
         )
-
-
+        
     def make_all_plots(self):
         self.plot_2D_detection_rate()
         self.plot_2D_differential_rate()
         self.plot_mean_n_trig()
         self.plot_2D_trig_efficiency()
+        self.plot_trig_efficiency()
         self.plot_layout()
         
