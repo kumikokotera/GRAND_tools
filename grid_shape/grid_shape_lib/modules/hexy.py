@@ -49,9 +49,9 @@ def get_nb_hexagons(n_ring):
 def is_inside_hex(pos, radius):
     
     pos = np.abs(pos)
-    
+
     r = radius * np.sqrt(3) / 2
-    
+
     if pos[0]  > r:
         return False
     else:
@@ -61,7 +61,7 @@ def is_inside_hex(pos, radius):
             return True
 
 def is_inside_hex_flattop(pos, radius):
-    
+
     pos = np.abs(pos)
     
     r = radius * np.sqrt(3) / 2

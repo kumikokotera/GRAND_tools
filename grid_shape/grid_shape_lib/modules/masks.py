@@ -1,14 +1,32 @@
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 
 from grid_shape_lib.modules import grids as grids
 from grid_shape_lib.modules import hexy as hx
 
 
+def plot_mask(mask, nring, plot_suffix):
+    pos, _ = grids.create_grid_univ("trihex", 250, input_n_ring=nring)
+    plt.figure()
+    plt.scatter(
+        pos[0],
+        pos[1],
+        c = 1-mask[:,0],
+        s = 3
+    )
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
+    plt.title('{} antennas'.format(mask.sum()))
+    plt.axis('equal')
+    plt.savefig(
+        os.path.join("layout_{}.png".format(plot_suffix))
+    )
+
 def get_spiral(a, b, theta):
     x = a*b**theta*np.cos(theta)
     y = a*b**theta*np.sin(theta)
-    return np.array([x,y])
+    return np.array([x, y])
 
 
 def get_closest_antenna(x, y, pos):
@@ -16,7 +34,7 @@ def get_closest_antenna(x, y, pos):
     return np.argmin(d)
 
 
-def make_spiral_mask_with_minipose(a, b, ntheta, shape="hexhex"):
+def make_spiral_mask_with_minipose(a, b, ntheta, shape="hexhex", minipos_nring=0, minipos_shape='trihex'):
     theta = np.arange(0, ntheta) / ntheta * 4 * np.pi
     spi1 = get_spiral(a, b, theta)
     spi1[0] -= a
@@ -64,7 +82,7 @@ def make_spiral_mask_with_minipose(a, b, ntheta, shape="hexhex"):
 
 
     minipos, _ = grids.create_grid_univ(
-        "trihex", 250, do_prune=False, input_n_ring=0
+        minipos_shape, 250, do_prune=False, input_n_ring=minipos_nring
     )
 
     minipos2 = minipos.copy()
@@ -82,7 +100,6 @@ def make_spiral_mask_with_minipose(a, b, ntheta, shape="hexhex"):
         posfine,
         minipos2
     )
-
 
     mask_hex1000 = make_coarse_out_of_fine_trihex(
     1000,
@@ -576,7 +593,134 @@ def make_centralisland_out_of_125_v2(pos_125, input_n_ring):
 
     return mask_new
 
+
 def make_mask_gp13(dense_step, radius, input_n_ring=10):
+
+    pos, _ = grids.create_grid_univ(
+        "trihex",
+        dense_step,
+        do_prune=False,
+        input_n_ring=input_n_ring
+    )
+    area = hx.get_area(radius) * 3
+    cube0 = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, -1],
+            [0, 1, -1],
+        ]
+    )
+
+    pos_13 = hx.cube_to_pixel(cube0, radius)
+    corners = hx.get_corners(pos_13, radius)
+
+    sh = np.array(corners).shape
+    corners = corners.transpose(0, 2, 1)
+    corners = np.array(corners).reshape((sh[0]*sh[2], sh[1]))
+
+    corners_x, corners_y = grids.remove_redundant_point(corners[:, 0], corners[:, 1])
+
+    pos_gp13 = np.array([corners_x, corners_y]).transpose()
+    pos_gp13 = pos_gp13.T
+    print(pos_gp13.shape)
+    print(pos.shape)
+    mask_gp13 = prune_pos(pos, pos_gp13)
+    return mask_gp13
+
+
+def make_mask_gp13_2_with_cubeinput(dense_step, radius, cube0, input_n_ring=10):
+
+    pos, _ = grids.create_grid_univ(
+        "trihex",
+        dense_step,
+        do_prune=False,
+        input_n_ring=input_n_ring
+    )
+    area = hx.get_area(radius) * 3
+    
+    pos_13 = hx.cube_to_pixel(cube0, radius)
+    corners = hx.get_corners(pos_13, radius)
+
+    sh = np.array(corners).shape
+    corners = corners.transpose(0, 2, 1)
+    corners = np.array(corners).reshape((sh[0]*sh[2], sh[1]))
+
+    corners_x, corners_y = grids.remove_redundant_point(corners[:, 0], corners[:, 1])
+
+    pos_gp13 = np.array([corners_x, corners_y]).transpose()
+    pos_gp13 = pos_gp13.T
+    print(pos_gp13.shape)
+    print(pos.shape)
+    mask_gp13 = prune_pos(pos, pos_gp13)
+    return mask_gp13
+
+
+def make_mask_gaa10_2_with_cubeinput(dense_step, radius, cube0, input_n_ring=10):
+
+    pos, _ = grids.create_grid_univ(
+        "trihex",
+        dense_step,
+        do_prune=False,
+        input_n_ring=input_n_ring
+    )
+    area = hx.get_area(radius) * 3
+    
+    pos_13 = hx.cube_to_pixel(cube0, radius)
+    corners = hx.get_corners(pos_13, radius)
+
+    sh = np.array(corners).shape
+    corners = corners.transpose(0, 2, 1)
+    corners = np.array(corners).reshape((sh[0]*sh[2], sh[1]))
+
+    corners_x, corners_y = grids.remove_redundant_point(corners[:, 0], corners[:, 1])
+
+    pos_gaa10 = np.array([corners_x, corners_y]).transpose()
+    pos_gaa10 = pos_gaa10.T
+    print(pos_gaa10.shape)
+    print(pos.shape)
+    mask_gaa10 = prune_pos(pos, pos_gaa10)
+    return mask_gaa10
+
+
+
+
+
+
+def make_mask_gp13_2(dense_step, radius, input_n_ring=10):
+
+    pos, _ = grids.create_grid_univ(
+        "trihex",
+        dense_step,
+        do_prune=False,
+        input_n_ring=input_n_ring
+    )
+    area = hx.get_area(radius) * 3
+    cube0 = np.array(
+        [
+            [0, 0, 1],
+            [1, 0, 1],
+            [1, 0, 0],
+        ]
+    )
+
+    pos_13 = hx.cube_to_pixel(cube0, radius)
+    corners = hx.get_corners(pos_13, radius)
+
+    sh = np.array(corners).shape
+    corners = corners.transpose(0, 2, 1)
+    corners = np.array(corners).reshape((sh[0]*sh[2], sh[1]))
+
+    corners_x, corners_y = grids.remove_redundant_point(corners[:, 0], corners[:, 1])
+
+    pos_gp13 = np.array([corners_x, corners_y]).transpose()
+    pos_gp13 = pos_gp13.T
+    print(pos_gp13.shape)
+    print(pos.shape)
+    mask_gp13 = prune_pos(pos, pos_gp13)
+    return mask_gp13
+
+
+def make_mask_gaA10(dense_step, radius, input_n_ring=10):
 
     pos, _ = grids.create_grid_univ(
         "trihex",
@@ -591,7 +735,7 @@ def make_mask_gp13(dense_step, radius, input_n_ring=10):
     area = hx.get_area(radius) * 3
     cube0 = np.array(
         [
-            [0, 0, 0],
+            #[0, 0, 0],
             [1, 0, -1],
             [0, 1, -1],
         ]
@@ -614,3 +758,38 @@ def make_mask_gp13(dense_step, radius, input_n_ring=10):
     print(pos.shape)
     mask_gp13 = prune_pos(pos, pos_gp13)
     return mask_gp13
+
+
+
+def make_mask_gaa10_entangled_with_cubeinput(dense_step, radius, cube0, input_n_ring=10):
+
+    pos, _ = grids.create_grid_univ(
+        "trihex",
+        dense_step,
+        do_prune=False,
+        input_n_ring=input_n_ring
+    )
+
+    pix_ = hx.cube_to_pixel(cube0, radius)
+    corners_ = hx.get_corners(pix_, radius)
+
+    sh = np.array(corners_).shape
+    corners_ = corners_.transpose(0, 2, 1)
+    corners_ = np.array(corners_).reshape((sh[0]*sh[2], sh[1]))
+
+    corners_x, corners_y = grids.remove_redundant_point(corners_[:, 0], corners_[:, 1])
+
+    pos_ = np.array([corners_x, corners_y]).transpose()
+    pos_ = pos_.T
+    print(pos_.shape)
+    print(pix_)
+    id = np.where(pos_[1,:]==pos_[1,:].max())[0]
+    print(id)
+    print(pos_[:,id])
+    
+    offset = pos_[:,id].T - pix_
+    pos1 = np.hstack([pos_, pos_ +offset.reshape(2,1)])
+    mask_gaa10 = prune_pos(pos, pos1)
+
+    
+    return mask_gaa10

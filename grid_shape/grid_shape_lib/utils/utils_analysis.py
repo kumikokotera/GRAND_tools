@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from interpolation_functions import hdf5fileinout as hd
 import ijson
 from grid_shape_lib.modules import grids as grids
+from grid_shape_lib.modules import hexy as hx
 
 '''
 Definition of class to read the simulation output files
@@ -175,7 +176,7 @@ def make_ev_list_from_hdf5_files(events_data_dir):
     return files_list
 
 
-def make_ev_list_from_merged_file(merged_file, prune_layout=()):
+def make_ev_list_from_merged_file(merged_file, prune_layout=(), radius_contained=0):
     ev_list = []
     count = 0
 
@@ -186,29 +187,29 @@ def make_ev_list_from_merged_file(merged_file, prune_layout=()):
         for k, v in data:
             subdir = k
             if "ef" in v:
-                name = subdir + ".Interpolated." + "%s_%s_efield.P2Pdat"%(grid_shape, step) 
-                ev_list.append(
-                    Event(
+                name = subdir + ".Interpolated." + "%s_%s_efield.P2Pdat"%(grid_shape, step)
+                ev_ef = Event(
                         v["ef_showerinfo"],
                         v["ef"],
-                        step, 
+                        step,
                         name,
                         prune_layout
                     )
-                )
-            
-            if "vo" in v: 
+                if (radius_contained == 0) or ((radius_contained>0) and (hx.is_inside_hex_flattop([ev_ef.random_core0, ev_ef.random_core1], radius_contained))):
+                    ev_list.append(ev_ef)
+
+            if "vo" in v:
                 name = subdir + ".Interpolated." + "%s_%s_voltage.P2Pdat"%(grid_shape, step) 
-                ev_list.append(
-                    Event(
+                ev_vo = Event(
                         v["vo_showerinfo"],
                         v["vo"],
                         step,
                         name,
                         prune_layout
                     )
-                )
-            
+                if (radius_contained == 0) or ((radius_contained>0) and (hx.is_inside_hex_flattop([ev_vo.random_core0, ev_vo.random_core1], radius_contained))):
+                    ev_list.append(ev_vo)
+
     return ev_list
 
 
@@ -393,7 +394,8 @@ def create_ev_select(
     n_trig_thres,
     prune_layout=(), 
     input_n_ring=10, 
-    hdf5=False
+    hdf5=False,
+    radius_contained=0
 ):
     
     # ev_select_name is e.g. ev_select_hexhex_Proton_250_30.0000_5_.npy
@@ -425,7 +427,7 @@ def create_ev_select(
         print('creating ev_select_file for {} {} {}'.format(grid_shape, primary, step))
         if not(hdf5):
             merged_file = os.path.join(merged_file_dir, '%s_%s_%s.json'%(primary, grid_shape, step))
-            ev_list = make_ev_list_from_merged_file(merged_file, prune_layout)
+            ev_list = make_ev_list_from_merged_file(merged_file, prune_layout, radius_contained=radius_contained)
         else:
             ev_list = make_ev_list_from_hdf5_files()
         for ev in ev_list:
@@ -498,19 +500,19 @@ def isnot_ev_select(ev_select_file):
     return not(os.path.isfile(ev_select_file))
 
 
-def make_ev_select_old(ev_list, layout, primary, ev_select_file):
-    ev_select = [
-        (
-            ev.num_triggered,
-            ev.energy,
-            ev.step,
-            ev.zenith,
-            ev.is_triggered2
-        ) for  ev in ev_list
-        if "voltage" in ev.name
-        and ev.primary == primary
-        and ev.layout == layout
-    ]
-    ev_select = np.array(ev_select)
-    np.save(ev_select_file, ev_select)
-    return ev_select
+# def make_ev_select_old(ev_list, layout, primary, ev_select_file):
+#     ev_select = [
+#         (
+#             ev.num_triggered,
+#             ev.energy,
+#             ev.step,
+#             ev.zenith,
+#             ev.is_triggered2
+#         ) for  ev in ev_list
+#         if "voltage" in ev.name
+#         and ev.primary == primary
+#         and ev.layout == layout
+#     ]
+#     ev_select = np.array(ev_select)
+#     np.save(ev_select_file, ev_select)
+#     return ev_select
