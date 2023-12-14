@@ -1,19 +1,13 @@
 from __future__ import absolute_import
 import numpy as np
-import astropy.units as u
 import logging
-import os
 import sys
-import inspect
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import cm
 
-try:
-    from grid_shape import hexy as hx
-except:
-    import hexy as hx
+from grid_shape_lib.modules import hexy as hx
 
 Z_SITE = 1086 # height of GP300 site in km
+
 
 def remove_redundant_point(grid_x, grid_y, **kwargs):
     x_pos_flat_fl = grid_x
@@ -28,10 +22,10 @@ def remove_redundant_point(grid_x, grid_y, **kwargs):
 
     else:
         return x_pos_new, y_pos_new
-   
-    
+
+
 def get_hexarray(n_ring, radius, do_mask=False):
-    radius_grid = (1 + n_ring *1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
+    radius_grid = (1 + n_ring * 1.5) * 2 / np.sqrt(3) * radius # radius of the circle enclosing the hexgrid
     xcube = hx.get_spiral(np.array((0,0,0)), 0, n_ring)
     xpix = hx.cube_to_pixel(xcube, radius) # centers of the hexagons
     xcorn = hx.get_corners(xpix, radius) # corners of the hexagons
@@ -63,7 +57,7 @@ def create_grid_univ(
     DISPLAY=False,
     directory=None,
     do_prune=False, 
-    input_n_ring = None
+    input_n_ring = -1
 ):
     '''
     generate new positions of antennas with universal layout
@@ -137,7 +131,7 @@ def create_grid_univ(
     if GridShape == 'hexhex':
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout...')
-        if input_n_ring:  
+        if input_n_ring != -1:  
             n_ring = input_n_ring
         else:
             n_ring = 5  # number of hex rings corresponding to 216/150 antennas (n_ring=5/4)
@@ -153,7 +147,7 @@ def create_grid_univ(
     if GridShape == 'trihex':
         # create a triangular grid with overall hexagonal layout: use a hexagonal grid and add the central point in each cell
         logging.debug('create_grid:Generating triangular grid in overall hexagonal layout...')
-        if input_n_ring:  
+        if input_n_ring != -1:
             n_ring = input_n_ring
         else:
             n_ring = 4 # number of hex rings corresponding to 211 antennas (n_ring=4)
@@ -169,7 +163,7 @@ def create_grid_univ(
         # create a hexagonal grid with overall hexagonal layout
         logging.debug('create_grid:Generating hexagonal grid in hex layout with random displacements...')
 
-        if input_n_ring:  
+        if input_n_ring != -1:  
             n_ring = input_n_ring
         else:
             n_ring = 4 # number of hex rings corresponding to 216/150 antennas (n_ring=5/4)
@@ -193,7 +187,7 @@ def create_grid_univ(
     z_pos_new = x_pos_new*0 + z_site
 
     # create new position array
-    new_pos = np.stack((x_pos_new,y_pos_new,z_pos_new), axis=0)
+    new_pos = np.stack((x_pos_new, y_pos_new, z_pos_new), axis=0)
 
 
    # rotate grid of specified angle

@@ -17,7 +17,16 @@ NE = np.array((0, -1, 1))
 E = np.array((1, -1, 0))
 ALL_DIRECTIONS = np.array([NW, NE, E, SE, SW, W, ])
 
-Angles_pointy_top = [np.pi/6 + i*np.pi/3 for i in range(0,6) ]
+Angles_pointy_top = [np.pi/6 + i*np.pi/3 for i in range(0, 6)]
+
+
+def get_area(radius):
+    """
+    computes the area of a hexagon of radius radius.
+    the radius is the distance between the center of the hexagon and one corners
+    and is the same as the distance between two adjacent corners
+    """
+    return 3 * np.sqrt(3)/2 * radius ** 2 
 
 
 def get_area(radius):
@@ -41,12 +50,17 @@ def get_corners(centers, radius):
     ]).transpose(1,2,0)
 
 
+def get_nb_hexagons(n_ring):
+    a = get_spiral(np.array((0,0,0)),0, n_ring)
+    return(len(a))
+
+    
 def is_inside_hex(pos, radius):
     
     pos = np.abs(pos)
-    
+
     r = radius * np.sqrt(3) / 2
-    
+
     if pos[0]  > r:
         return False
     else:
@@ -56,7 +70,7 @@ def is_inside_hex(pos, radius):
             return True
 
 def is_inside_hex_flattop(pos, radius):
-    
+
     pos = np.abs(pos)
     
     r = radius * np.sqrt(3) / 2
